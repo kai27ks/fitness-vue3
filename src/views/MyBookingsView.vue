@@ -65,6 +65,9 @@ onMounted(load)
     </div>
 
     <div class="scroll-area">
+      <div class="banner info" style="margin: 12px">
+        通知仅作提醒，请以「我的预约」为准；关注公众号可接收预约成功、改约取消与上课前 24 小时提醒。
+      </div>
       <div v-if="loading" class="loading">加载中…</div>
 
       <div v-else-if="!list.length" class="empty">

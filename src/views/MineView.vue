@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { api, setToken } from '../api'
+import { api, clearSession } from '../api'
 import { toast } from '../utils'
 import TabBar from '../components/TabBar.vue'
 
@@ -25,7 +25,7 @@ const icons: Record<string, string> = {
 }
 
 function logout() {
-  setToken(null)
+  clearSession()
   toast('已退出登录')
   router.replace('/login')
 }
@@ -43,7 +43,10 @@ onMounted(async () => {
   <div class="page">
     <div class="me-hero">
       <div class="row">
-        <div class="avatar">{{ (me?.name || '会')[0] }}</div>
+        <div class="avatar">
+          <img v-if="me?.avatarUrl" :src="me.avatarUrl" style="width:100%;height:100%;object-fit:cover;border-radius:50%" />
+          <template v-else>{{ (me?.name || '会')[0] }}</template>
+        </div>
         <div>
           <b>{{ me?.name || '…' }}</b>
           <small>{{ me?.phone || '' }}<template v-if="me?.coachName"> · 专属教练 {{ me.coachName }}</template></small>

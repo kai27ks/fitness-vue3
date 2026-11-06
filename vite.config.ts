@@ -8,7 +8,8 @@ export default defineConfig({
     port: 5173,
     proxy: {
       '/api': 'http://localhost:8080',
-      '/upload': 'http://localhost:8080'
+      '/upload': 'http://localhost:8080',
+      '/wechat': 'http://localhost:8080'
     }
   }
 })

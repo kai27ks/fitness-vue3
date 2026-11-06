@@ -3,6 +3,10 @@ import { getToken, getRole } from '../api'
 
 const routes = [
   { path: '/login', component: () => import('../views/LoginView.vue'), meta: { public: true } },
+  // 公众号入口：只持一次性票据，不要求登录态
+  { path: '/wechat/entry', component: () => import('../views/WechatEntryView.vue'), meta: { public: true } },
+  { path: '/wechat/bind', component: () => import('../views/WechatBindView.vue'), meta: { public: true } },
+  { path: '/wechat/follow', component: () => import('../views/WechatFollowView.vue'), meta: { public: true } },
   { path: '/', component: () => import('../views/HomeView.vue') },
   { path: '/booking', component: () => import('../views/BookingView.vue') },
   { path: '/bookings', component: () => import('../views/MyBookingsView.vue') },
@@ -30,6 +34,8 @@ const routes = [
   { path: '/admin/mine', component: () => import('../views/admin/MineView.vue') },
   { path: '/admin/reports', component: () => import('../views/admin/ReportsView.vue') },
   { path: '/admin/moments/review', component: () => import('../views/admin/MomentReviewView.vue') },
+  { path: '/admin/claim-requests', component: () => import('../views/admin/ClaimRequestsView.vue') },
+  { path: '/admin/notify-logs', component: () => import('../views/admin/NotifyLogsView.vue') },
   { path: '/:pathMatch(.*)*', redirect: '/' }
 ]
 

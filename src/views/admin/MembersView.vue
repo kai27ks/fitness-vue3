@@ -48,6 +48,13 @@ onMounted(load)
         <input v-model="keyword" placeholder="搜索姓名 / 手机号" @input="load" />
       </div>
 
+      <router-link to="/admin/claim-requests" class="banner info" style="text-decoration:none;margin-top:12px">
+        📋 待核实认领申请：手机号未命中的微信用户，点此核实并绑定档案 →
+      </router-link>
+      <router-link to="/admin/notify-logs" class="banner info" style="text-decoration:none">
+        🔔 公众号通知发送记录：查看成功 / 跳过 / 失败明细 →
+      </router-link>
+
       <div v-if="loading" class="loading">加载中…</div>
       <div v-else-if="!list.length" class="empty"><div class="e-ico">👥</div><p>暂无会员</p></div>
 

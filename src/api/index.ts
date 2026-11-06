@@ -1,17 +1,32 @@
 const TOKEN_KEY = 'jsf_token'
+const SOURCE_KEY = 'jsf_source'
 
 export const getToken = () => localStorage.getItem(TOKEN_KEY)
 export const setToken = (t: string | null) =>
   t ? localStorage.setItem(TOKEN_KEY, t) : localStorage.removeItem(TOKEN_KEY)
 
 export const getRole = () => localStorage.getItem('jsf_role') || 'MEMBER'
-export const setSession = (token: string, role: string) => {
+export const getSource = () => localStorage.getItem(SOURCE_KEY) || 'PASSWORD'
+export const setSession = (token: string, role: string, source: 'PASSWORD' | 'WECHAT' = 'PASSWORD') => {
   setToken(token)
   if (role) localStorage.setItem('jsf_role', role)
+  localStorage.setItem(SOURCE_KEY, source)
 }
 export const clearSession = () => {
   setToken(null)
   localStorage.removeItem('jsf_role')
+  localStorage.removeItem(SOURCE_KEY)
+}
+
+/** 微信会话过期时静默重授权，而不是把用户丢回账密登录页 */
+function unauthorized() {
+  setToken(null)
+  if (getSource() === 'WECHAT') {
+    const redirect = encodeURIComponent(location.pathname + location.search)
+    window.location.replace(`/wechat/oauth/entry?redirect=${redirect}`)
+  } else {
+    window.location.href = '/login'
+  }
 }
 
 async function request<T = any>(path: string, options: RequestInit = {}): Promise<T> {
@@ -22,8 +37,7 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
   let body: any = null
   try { body = await res.json() } catch { /* 非 JSON 响应 */ }
   if (res.status === 401 || body?.code === 401) {
-    setToken(null)
-    window.location.href = '/login'
+    unauthorized()
     throw new Error('登录已过期')
   }
   if (!body || body.code !== 0) throw new Error(body?.message || '请求失败，请稍后再试')
@@ -39,8 +53,7 @@ async function requestForm<T = any>(path: string, form: FormData): Promise<T> {
   let body: any = null
   try { body = await res.json() } catch { /* 非 JSON 响应 */ }
   if (res.status === 401 || body?.code === 401) {
-    setToken(null)
-    window.location.href = '/login'
+    unauthorized()
     throw new Error('登录已过期')
   }
   // 单张图片被打回时，message 里带具体原因，交给调用方逐张展示
@@ -49,17 +62,13 @@ async function requestForm<T = any>(path: string, form: FormData): Promise<T> {
 }
 
 export const api = {
-  // 认证
-  smsCode: (phone: string) =>
-    request<any>('/auth/sms-code', { method: 'POST', body: JSON.stringify({ phone }) }),
-  register: (d: any) =>
-    request<any>('/auth/register', { method: 'POST', body: JSON.stringify(d) }),
+  // 认证（短信链路已下线：仅账密登录 + 公众号认领）
   loginPassword: (phone: string, password: string) =>
     request<any>('/auth/login/password', { method: 'POST', body: JSON.stringify({ phone, password }) }),
-  loginCode: (phone: string, code: string) =>
-    request<any>('/auth/login/code', { method: 'POST', body: JSON.stringify({ phone, code }) }),
-  resetPassword: (d: any) =>
-    request<void>('/auth/password/reset', { method: 'POST', body: JSON.stringify(d) }),
+  wechatTicket: (ticket: string) =>
+    request<any>('/auth/wechat/ticket', { method: 'POST', body: JSON.stringify({ ticket }) }),
+  wechatClaim: (d: { claimTicket: string; phone: string; claimCode: string }) =>
+    request<any>('/auth/wechat/claim', { method: 'POST', body: JSON.stringify(d) }),
   // 会员
   home: () => request<any>('/member/home'),
   packages: () => request<any[]>('/member/packages'),
@@ -81,6 +90,22 @@ export const api = {
   toggleCourse: (id: number) => request<void>(`/courses/${id}/toggle`, { method: 'POST' }),
 
   /* ===== 会员管理 ===== */
+  updateMember: (id: number, d: any) =>
+    request<void>(`/admin/members/${id}`, { method: 'PUT', body: JSON.stringify(d) }),
+  claimCode: (id: number) => request<any>(`/admin/wechat/members/${id}/claim-code`),
+  resetClaimCode: (id: number) =>
+    request<any>(`/admin/wechat/members/${id}/claim-code`, { method: 'POST' }),
+  wechatBindInfo: (id: number) => request<any>(`/admin/wechat/members/${id}/bind`),
+  unbindWechat: (id: number) =>
+    request<void>(`/admin/wechat/members/${id}/bind`, { method: 'DELETE' }),
+  claimRequests: (status = 'PENDING') =>
+    request<any[]>(`/admin/wechat/claim-requests?status=${status}`),
+  bindClaimRequest: (id: number, d: { memberId: number; note?: string }) =>
+    request<void>(`/admin/wechat/claim-requests/${id}/bind`, { method: 'POST', body: JSON.stringify(d) }),
+  rejectClaimRequest: (id: number, note?: string) =>
+    request<void>(`/admin/wechat/claim-requests/${id}/reject`, { method: 'POST', body: JSON.stringify({ note }) }),
+  notifyLogs: (scene?: string) =>
+    request<any[]>(`/admin/wechat/notify-logs${scene ? `?scene=${scene}` : ''}`),
   adminMembers: (keyword?: string, coachId?: number) =>
     request<any[]>(`/admin/members${keyword ? `?keyword=${encodeURIComponent(keyword)}` : ''}${coachId ? (keyword ? '&' : '?') + 'coachId=' + coachId : ''}`),
   createMember: (d: any) => request<any>('/admin/members', { method: 'POST', body: JSON.stringify(d) }),
