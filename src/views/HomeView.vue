@@ -68,6 +68,18 @@ onMounted(async () => {
         </router-link>
       </div>
 
+      <div class="sec-title"><b>会员风采</b><router-link to="/moments" style="font-size:12px;color:var(--primary-deep);text-decoration:none">查看全部 ›</router-link></div>
+      <div class="card" style="display:flex;align-items:center;gap:12px;margin-bottom:14px" @click="$router.push('/moments')">
+        <i class="i-purple" style="width:42px;height:42px;border-radius:14px;display:flex;align-items:center;justify-content:center;flex-shrink:0">
+          <svg viewBox="0 0 24 24" width="21" height="21" stroke="#fff" fill="none" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><path d="M21 15l-5-5L5 21"/></svg>
+        </i>
+        <div style="flex:1">
+          <b style="font-size:14px">记录每一次训练</b>
+          <small style="display:block;color:var(--sub);font-size:11.5px;margin-top:3px">发布图片、评论互动 · 每日最多 4 张</small>
+        </div>
+        <span class="arr">›</span>
+      </div>
+
       <div class="sec-title"><b>联系我们</b></div>
       <div class="contact">
         <div class="info">

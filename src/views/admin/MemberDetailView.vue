@@ -89,7 +89,10 @@ onMounted(async () => {
         </div>
         <div v-for="p in packages" :key="p.id" class="lesson">
           <div class="avatar" style="background:linear-gradient(135deg,#12C48B,#0B8F7E);color:#fff">{{ p.remainSessions }}</div>
-          <div class="info"><b>剩余 {{ p.remainSessions }} / {{ p.totalSessions }} 节</b><small>有效期至 {{ p.expireDate }} · ¥{{ p.totalPrice }}</small></div>
+          <div class="info">
+            <b>{{ p.courseName }} · 剩余 {{ p.remainSessions }} / {{ p.totalSessions }} 节</b>
+            <small>有效期至 {{ p.expireDate }} · ¥{{ p.totalPrice }}</small>
+          </div>
           <div style="display:flex;gap:6px">
             <span class="btn-ghost" style="height:28px;padding:0 10px;font-size:12px;cursor:pointer" @click="adjust(p, 1)">+1</span>
             <span class="btn-ghost red" style="height:28px;padding:0 10px;font-size:12px;cursor:pointer" @click="adjust(p, -1)">-1</span>

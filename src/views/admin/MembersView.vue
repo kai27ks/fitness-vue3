@@ -10,18 +10,30 @@ const router = useRouter()
 const list = ref<any[]>([])
 const keyword = ref('')
 const loading = ref(true)
-const classes: Record<number, string> = { 1: '正常', 2: '即将到期', 0: '已停课' }
-const clsColor: Record<number, string> = { 1: 'wait', 2: 'warn', 0: 'cancel' }
+
+const STATUS: Record<string, { text: string; cls: string }> = {
+  NORMAL: { text: '正常', cls: 'wait' },
+  EXPIRING: { text: '即将到期', cls: 'warn' },
+  EXPIRED: { text: '已过期', cls: 'cancel' },
+  USED: { text: '已用完', cls: 'cancel' },
+  EMPTY: { text: '未购课', cls: 'info' }
+}
+
+function statusOf(m: any) {
+  return STATUS[m.status] || { text: '正常', cls: 'wait' }
+}
+
+function ringStyle(m: any) {
+  const total = m.totalSessions || 0
+  if (!total) return { background: 'conic-gradient(#E9EDF1 0 100%)' }
+  const percent = Math.round(((m.remainSessions || 0) / total) * 100)
+  return { background: `conic-gradient(var(--primary) 0 ${percent}%, #E9EDF1 ${percent}% 100%)` }
+}
 
 async function load() {
   loading.value = true
   try { list.value = await api.adminMembers(keyword.value || undefined) }
   catch (e: any) { if (e.message !== '登录已过期') toast(e.message) } finally { loading.value = false }
-}
-
-function remainOf(m: any) {
-  // 该会员所有 ACTIVE 课包剩余课时之和（需在详情取，这里用简单标记）
-  return m.remain ?? null
 }
 
 onMounted(load)
@@ -35,16 +47,27 @@ onMounted(load)
         <svg width="15" height="15" viewBox="0 0 24 24" stroke="#8A93A0" fill="none" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.3-4.3"/></svg>
         <input v-model="keyword" placeholder="搜索姓名 / 手机号" @input="load" />
       </div>
+
       <div v-if="loading" class="loading">加载中…</div>
       <div v-else-if="!list.length" class="empty"><div class="e-ico">👥</div><p>暂无会员</p></div>
-      <router-link v-for="m in list" :key="m.id" class="m-row" :to="`/admin/members/${m.id}`">
+
+      <router-link v-for="m in list" v-else :key="m.id" class="m-row" :to="`/admin/members/${m.id}`">
         <div class="avatar" style="width:48px;height:48px;font-size:16px">{{ (m.name || '会')[0] }}</div>
         <div class="info">
-          <div class="n"><b>{{ m.name }}</b><span class="pill" :class="clsColor[m.status ?? 1]">{{ classes[m.status ?? 1] }}</span></div>
-          <small>{{ m.phone }} · 专属教练 {{ m.coachId ? '教练#' + m.coachId : '未绑定' }}</small>
+          <div class="n">
+            <b>{{ m.name }}</b>
+            <span class="pill" :class="statusOf(m).cls">{{ statusOf(m).text }}</span>
+          </div>
+          <small>{{ m.phone }} · 专属教练 {{ m.coachName || '未绑定' }}</small>
+          <div class="course-tags" v-if="m.courses && m.courses.length">
+            <span v-for="c in m.courses" :key="c.packageId" class="course-tag" :class="{ used: c.remainSessions <= 0 }">
+              {{ c.courseName }} {{ c.remainSessions }}/{{ c.totalSessions }}
+            </span>
+          </div>
+          <small v-else class="no-course">未购课</small>
         </div>
-        <div class="ring" style="position:relative;background:conic-gradient(var(--primary) 0 60%,#E9EDF1 60% 100%)">
-          <div>--<span style="font-size:8px">节</span></div>
+        <div class="ring" :style="ringStyle(m)">
+          <div>{{ m.totalSessions > 0 ? m.remainSessions : '--' }}<span style="font-size:8px">节</span></div>
         </div>
       </router-link>
     </div>
@@ -52,3 +75,10 @@ onMounted(load)
     <AdminTabBar active="schedule" />
   </div>
 </template>
+
+<style scoped>
+.course-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+.course-tag { font-size: 10.5px; padding: 2px 8px; border-radius: 6px; background: #EAF1FF; color: #3C6FD1; white-space: nowrap; }
+.course-tag.used { background: #F1F3F5; color: #B0B8C1; }
+.no-course { color: var(--sub); font-size: 11.5px; margin-top: 5px; display: block; }
+</style>

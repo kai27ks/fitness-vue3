@@ -30,6 +30,24 @@ async function request<T = any>(path: string, options: RequestInit = {}): Promis
   return body.data as T
 }
 
+/** multipart 上传专用：不能带 Content-Type，交给浏览器生成 boundary */
+async function requestForm<T = any>(path: string, form: FormData): Promise<T> {
+  const headers: Record<string, string> = {}
+  const token = getToken()
+  if (token) headers.Authorization = 'Bearer ' + token
+  const res = await fetch('/api' + path, { method: 'POST', body: form, headers })
+  let body: any = null
+  try { body = await res.json() } catch { /* 非 JSON 响应 */ }
+  if (res.status === 401 || body?.code === 401) {
+    setToken(null)
+    window.location.href = '/login'
+    throw new Error('登录已过期')
+  }
+  // 单张图片被打回时，message 里带具体原因，交给调用方逐张展示
+  if (!body || body.code !== 0) throw new Error(body?.message || '上传失败，请稍后再试')
+  return body.data as T
+}
+
 export const api = {
   // 认证
   smsCode: (phone: string) =>
@@ -72,6 +90,8 @@ export const api = {
   addPackage: (id: number, d: any) => request<any>(`/admin/members/${id}/packages`, { method: 'POST', body: JSON.stringify(d) }),
   adjustPackage: (pid: number, delta: number, remark?: string) =>
     request<void>(`/admin/members/packages/${pid}/adjust`, { method: 'POST', body: JSON.stringify({ delta, remark }) }),
+  adminPackages: (keyword?: string) =>
+    request<any[]>(`/admin/packages${keyword ? `?keyword=${encodeURIComponent(keyword)}` : ''}`),
 
   /* ===== 教练管理 ===== */
   coachMe: () => request<any>('/coaches/me'),
@@ -99,5 +119,33 @@ export const api = {
   /* ===== 报表 / 工作台 ===== */
   dashboard: () => request<any>('/admin/dashboard'),
   reportFinance: () => request<any>('/reports/finance'),
-  reportCourses: () => request<any>('/reports/courses')
+  reportCourses: () => request<any>('/reports/courses'),
+
+  /* ===== 会员风采 ===== */
+  momentConfig: () => request<any>('/moments/config'),
+  momentQuota: () => request<any>('/moments/quota'),
+  // 一张一张上传：一次请求一张图，后端对应一次腾讯云图片审核；失败只影响这一张
+  uploadMoment: (file: Blob, title: string, batchId: string) => {
+    const f = new FormData()
+    f.append('file', file)
+    if (title) f.append('title', title)
+    if (batchId) f.append('batchId', batchId)
+    return requestForm<any>('/moments/images', f)
+  },
+  moments: (scope = 'all', page = 1, size = 20) =>
+    request<any>(`/moments?scope=${scope}&page=${page}&size=${size}`),
+  momentDetail: (id: number | string) => request<any>(`/moments/${id}`),
+  momentComments: (id: number | string, page = 1, size = 20) =>
+    request<any>(`/moments/${id}/comments?page=${page}&size=${size}`),
+  addMomentComment: (id: number | string, d: any) =>
+    request<any>(`/moments/${id}/comments`, { method: 'POST', body: JSON.stringify(d) }),
+  deleteMoment: (id: number | string) => request<void>(`/moments/${id}`, { method: 'DELETE' }),
+  deleteMomentComment: (cid: number | string) =>
+    request<void>(`/moments/comments/${cid}`, { method: 'DELETE' }),
+  adminMoments: (status = 'PENDING', page = 1, size = 50) =>
+    request<any>(`/admin/moments?status=${status}&page=${page}&size=${size}`),
+  reviewMoment: (id: number | string, action: string, reason?: string) =>
+    request<void>(`/admin/moments/${id}/review`, { method: 'POST', body: JSON.stringify({ action, reason }) }),
+  batchReviewMoments: (ids: number[], action: string, reason?: string) =>
+    request<any>('/admin/moments/batch-review', { method: 'POST', body: JSON.stringify({ ids, action, reason }) })
 }

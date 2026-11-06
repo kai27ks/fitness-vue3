@@ -13,7 +13,7 @@ const d = ref<any>(null)
 const entries = [
   { label: '添加会员', path: '/admin/members/add', cls: 'i-green', icon: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>' },
   { label: '会员管理', path: '/admin/members', cls: 'i-orange', icon: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>' },
-  { label: '我的预约', path: '/admin/schedule', cls: 'i-blue', icon: '<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 3"/>' },
+  { label: '会员课包', path: '/admin/packages', cls: 'i-blue', icon: '<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/>' },
   { label: '课程模板', path: '/admin/courses', cls: 'i-purple', icon: '<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/>' },
   { label: '请假', path: '/admin/leave', cls: 'i-dark', icon: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>' },
   { label: '报表中心', path: '/admin/reports', cls: 'i-green', icon: '<path d="M3 17l6-6 4 4 8-8"/><path d="M14 7h7v7"/>' }

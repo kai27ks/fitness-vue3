@@ -1,11 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { api } from '../api'
 import NavBar from '../components/NavBar.vue'
 
 const route = useRoute()
-const router = useRouter()
 const detail = ref<any>(null)
 const loading = ref(true)
 
@@ -58,7 +57,7 @@ onMounted(async () => {
           <p v-else>暂无资质信息</p>
         </div>
 
-        <button class="btn" @click="router.push('/booking')">预约{{ detail.coach.name }}</button>
+        <div class="banner info">1V1 课程由系统绑定专属教练，会员不可自行选择教练；约课请从底部「约课」进入。</div>
       </div>
     </template>
   </div>
