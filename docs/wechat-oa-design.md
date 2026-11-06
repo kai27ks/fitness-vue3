@@ -601,8 +601,9 @@ CREATE TABLE wechat_account (
 #### 验证状态
 
 - IDE 静态诊断：本次新增/修改的 Java 与 Vue 文件均 **0 error / 0 warning**。
-- **前端构建未跑通**：`node node_modules/vite/bin/vite.js build` 连续两次因执行审批提示超时被取消（并非用户拒绝），需在开发机重试 `npm run build`。
-- **后端 `mvn clean package` 仍未执行**（本机 Maven 不在 PATH，见 §17.10）；数据库与消息发送流程均未实测。
+- **前端构建通过（已复核）**：`dist` 于 2026-11-06 14:23 重新生成，`WechatFollowView`、`NotifyLogsView`、`WechatEntryView`、`WechatBindView`、`ClaimRequestsView` 等新增页面均编译产出。`vite build` 不做 TS 类型检查（未装 `vue-tsc`）。
+- **后端完整编译已跑通（javac + 本地依赖）**：全部源码遍历后，本次新增/修改的文件 **0 错误**；仅有的 4 个错误与 §17.10 记录完全相同（`JwtUtil.java:32/41`、`AuthInterceptor.java:19/34`），均为验证脚本把 `.m2` 中多版本 `jjwt`/`spring-webmvc` 同时塞进 classpath 所致，这两个文件本次未改动，项目经 Maven 解析依赖不会有此问题。最终仍以开发机 `mvn clean package` 为准。
+- **git 改动清单已核对**：前端 9 改 6 增（含 `docs/`）、后端 10 改 7 增，与 §16.8/§17.10 记录一一对应，无多余改动。数据库与消息发送流程均未实测。
 
 ---
 
@@ -834,8 +835,8 @@ Q13 已定为「开放」：建档接口与改资料接口（含手机号）已�
 
 #### 验证状态（如实）
 
-- **前端：认领方案那一版 Vite 生产构建通过** —— `dist/index.html` 与 `dist/assets/` 已生成，Vue 模板编译无错误。注意 `vite build` 由 esbuild 转译、不做 TS 类型检查（项目未装 `vue-tsc`）。**§16.8 新增的通知相关页面构建未跑通**（执行审批超时，见 §16.8 验证状态），需在开发机重跑。
-- **后端：完整编译未最终确认** —— 本机 `java` / `mvn` 未加入 PATH（JDK 21 在 `C:\Users\user\.jdks\ms-21.0.12.1`，`.m2\repository` 有依赖缓存），改用 `javac` 手工拼 classpath 编译。最后一次执行遍历全部源码，**本次新增/修改的 Java 文件 0 错误**；仅报 4 个既有文件错误（`JwtUtil.java:32/41` 的 `subject()` / `verifyWith()`、`AuthInterceptor.java:19/34` 的 `@Override`），原因是验证脚本把 `.m2` 里多版本 `jjwt` 与 `spring-webmvc` 同时塞进 classpath，javac 解析到了旧版 API；项目 pom 用 Maven 解析（jjwt 0.12.6 / Spring Boot 3.3.5）不会有此问题，且这两个文件本次**未改动**。请以开发机 `mvn clean package` 为最终结论。
+- **前端：Vite 生产构建通过（含通知模块，已复核）** —— `dist` 已生成全部页面产物，含 `WechatFollowView`、`NotifyLogsView` 等新增视图。注意 `vite build` 由 esbuild 转译、不做 TS 类型检查（项目未装 `vue-tsc`）。
+- **后端：javac 完整编译已跑通（结论不变）** —— 本机 `java` / `mvn` 未加入 PATH（JDK 21 在 `C:\Users\user\.jdks\ms-21.0.12.1`，`.m2\repository` 有依赖缓存），改用 `javac` + `@argfile`（绕过 Windows 命令行长度限制）对**全部源码**编译。含 §16 通知模块在内的本次新增/修改文件 **0 错误**；仅报 4 个既有文件错误（`JwtUtil.java:32/41` 的 `subject()` / `verifyWith()`、`AuthInterceptor.java:19/34` 的 `@Override`），原因是验证脚本把 `.m2` 里多版本 `jjwt` 与 `spring-webmvc` 同时塞进 classpath，javac 解析到了旧版 API；项目 pom 用 Maven 解析（jjwt 0.12.6 / Spring Boot 3.3.5）不会有此问题，且这两个文件本次**未改动**。请以开发机 `mvn clean package` 为最终结论。
 - IDE 静态诊断：前后端改动文件均 **0 error / 0 warning**。
 - **尚未做数据库运行验证**：`schema.sql` 新增表、认领流程与事务均需在 MySQL `fitness` 库上按 §17.10 联调步骤实测。
 
