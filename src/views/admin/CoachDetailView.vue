@@ -1,12 +1,14 @@
 <script setup lang="ts">
 import { onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { api } from '../../api'
+import { api, getRole } from '../../api'
 import { toast } from '../../utils'
 import NavBar from '../../components/NavBar.vue'
+import CoachAccountPanel from '../../components/CoachAccountPanel.vue'
 
 const route = useRoute()
 const id = Number(route.params.id)
+const isAdmin = getRole() === 'ADMIN'
 const coach = ref<any>(null)
 const quals = ref<any[]>([])
 const leaves = ref<any[]>([])
@@ -50,8 +52,10 @@ onMounted(load)
     <div v-else class="scroll-area" style="padding-top:6px">
       <div class="m-row" style="padding:16px">
         <div class="avatar" style="width:52px;height:52px;font-size:17px">{{ coach.name[0] }}</div>
-        <div class="info"><div class="n"><b>{{ coach.name }}</b><span class="pill wait">在职</span></div><small>{{ coach.intro || '暂无简介' }}</small></div>
+        <div class="info"><div class="n"><b>{{ coach.name }}</b><span class="pill" :class="coach.status === 1 ? 'wait' : 'cancel'">{{ coach.status === 1 ? '在职' : '停用' }}</span></div><small>{{ coach.intro || '暂无简介' }}</small></div>
       </div>
+
+      <CoachAccountPanel v-if="isAdmin" :coach-id="id" />
 
       <div class="sec-title"><b>专业资质</b><a @click="showQual = !showQual">＋ 添加</a></div>
       <div v-if="showQual" class="card" style="padding:14px;margin-bottom:12px;display:flex;flex-direction:column;gap:10px">

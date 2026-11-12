@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { api, clearSession, getRole } from '../../api'
 import { toast } from '../../utils'
 import AdminTabBar from '../../components/AdminTabBar.vue'
+import SupportContact from '../../components/SupportContact.vue'
 
 const router = useRouter()
 const role = getRole()
@@ -11,7 +12,7 @@ const coach = ref<any>(null)
 const d = ref<any>(null)
 
 const menus = [
-  { label: '我的课表', path: '/admin/schedule', cls: 'i-green', icon: '<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/>' },
+  { label: role === 'COACH' ? '我的预约' : '预约管理', path: '/admin/schedule', cls: 'i-green', icon: '<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/>' },
   { label: '提交请假', path: '/admin/leave', cls: 'i-orange', icon: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.7 21a2 2 0 0 1-3.4 0"/>' },
   { label: '会员管理', path: '/admin/members', cls: 'i-blue', icon: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>' },
   { label: '会员课包', path: '/admin/packages', cls: 'i-orange', icon: '<rect x="2" y="5" width="20" height="14" rx="3"/><path d="M2 10h20"/>' },
@@ -61,7 +62,8 @@ onMounted(async () => {
       <div class="menu" style="margin-top:12px">
         <div class="mi" @click="logout" style="justify-content:center;color:var(--warn)">退出登录</div>
       </div>
-      <div style="text-align:center;color:#B7BFC8;font-size:11px;margin-top:20px">私教工作室 · 管理端 V1.0</div>
+      <div style="text-align:center;color:#B7BFC8;font-size:11px;margin-top:20px">私教工作室 · {{ role === 'ADMIN' ? '管理端' : '教练端' }} V1.0</div>
+      <SupportContact v-if="role === 'COACH'" />
     </div>
 
     <AdminTabBar active="mine" />

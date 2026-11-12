@@ -171,7 +171,7 @@ onMounted(async () => {
         </div>
         <div v-if="!packages.length" class="banner info">暂无课包，点击「增购」添加。</div>
 
-        <div class="sec-title"><b>预约记录</b></div>
+        <div class="sec-title"><b>预约记录</b><router-link :to="{ path: '/admin/schedule/new', query: { memberId: id } }">＋ 替会员约课</router-link></div>
         <div v-for="b in bookings" :key="b.id" class="lesson">
           <div class="avatar">{{ (b.courseName || '课')[0] }}</div>
           <div class="info"><b>{{ b.courseName || '课程' }}</b><small>{{ parseBookingTime(b.startTime, b.endTime).date }} {{ parseBookingTime(b.startTime, b.endTime).time }} - {{ parseBookingTime(b.startTime, b.endTime).end }}</small></div>

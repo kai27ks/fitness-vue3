@@ -7,8 +7,8 @@ import { toast } from '../utils'
 const router = useRouter()
 const form = reactive({ phone: '', password: '' })
 const loading = ref(false)
-// 本地开发提供模拟公众号入口；生产环境入口是公众号菜单/二维码
-const isLocal = location.hostname === 'localhost' || location.hostname === '127.0.0.1'
+// 开发/内网穿透调试时提供模拟公众号入口；生产构建后自动隐藏（真实入口是公众号菜单/二维码）
+const showMockEntry = import.meta.env.DEV
 
 async function submit() {
   if (loading.value) return
@@ -37,12 +37,15 @@ function wechatEntry() {
   <div class="page" style="padding-bottom: 40px">
     <div class="login-hero">
       <div class="logo-badge">🏋</div>
-      <h1>私教工作室 · 会员端</h1>
-      <p>一对一私教 · 上课时间由你决定</p>
+      <h1>私教工作室</h1>
+      <p>会员 · 教练 · 管理员统一登录</p>
     </div>
 
     <div class="login-body">
-      <div class="banner info">会员请从公众号菜单进入，首次进入用「建档手机号 + 认领码」绑定档案，之后自动登录。</div>
+      <div class="banner info">
+        会员：优先从公众号菜单进入，首次用「建档手机号 + 认领码」绑定档案，之后自动登录；也可用手机号 + 密码登录。<br>
+        教练 / 管理员：使用后台开通的账号密码登录。
+      </div>
 
       <div class="input">📱 <input v-model="form.phone" maxlength="11" placeholder="手机号" inputmode="numeric" /></div>
       <div class="input">🔒
@@ -51,8 +54,8 @@ function wechatEntry() {
 
       <button class="btn" :disabled="loading" @click="submit">{{ loading ? '请稍候…' : '登 录' }}</button>
 
-      <button v-if="isLocal" class="btn-ghost" style="justify-content:center;height:44px" @click="wechatEntry">
-        模拟公众号入口（本地调试）
+      <button v-if="showMockEntry" class="btn-ghost" style="justify-content:center;height:44px" @click="wechatEntry">
+        模拟公众号入口（调试）
       </button>
 
       <div class="login-links">

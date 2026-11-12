@@ -1,0 +1,72 @@
+name: 部署前端
+
+# 仓库：kai27ks/fitness-vue3（master）
+# 配套：服务器 /opt/fitness/deploy.sh（由后端仓库的流水线上传到服务器）
+on:
+  push:
+    branches: [master]
+    paths-ignore:
+      - '**.md'
+      - '.github/**'
+  workflow_dispatch:
+
+# 同仓库内不并发；跨仓库并发由 deploy.sh 的 flock 在服务器侧串行化
+concurrency:
+  group: fitness-vue3-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: 拉取代码
+        uses: actions/checkout@v4
+
+      - name: 准备 Node 22（Vite 8 需要 >= 20.19 / >= 22.12）
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      # 本机全局 npm 配过 omit=dev，必须显式 --include=dev，否则 vite 不会被安装
+      - name: 构建 dist
+        run: |
+          npm install --include=dev
+          npm run build
+
+      - name: 打包 dist（单文件传输比逐文件 scp 可靠）
+        run: tar -czf dist.tar.gz -C dist .
+
+      - name: 装载部署私钥
+        uses: webfactory/ssh-agent@v0.9.0
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: 上传并部署
+        env:
+          HOST: '123.206.230.38'
+          USER: 'app'
+          PORT: '22'
+        run: |
+          set -euo pipefail
+          SSH_OPT=(-o StrictHostKeyChecking=accept-new -o ConnectTimeout=15)
+          TARGET="$USER@$HOST"
+
+          ssh -p "$PORT" "${SSH_OPT[@]}" "$TARGET" 'mkdir -p ~/incoming/dist'
+          scp -P "$PORT" "${SSH_OPT[@]}" dist.tar.gz "$TARGET:~/incoming/dist.tar.gz"
+
+          # 解压到 incoming/dist 后交给 deploy.sh 做原子替换（不重启后端）
+          ssh -p "$PORT" "${SSH_OPT[@]}" "$TARGET" '
+            set -e
+            rm -rf ~/incoming/dist && mkdir -p ~/incoming/dist
+            tar -xzf ~/incoming/dist.tar.gz -C ~/incoming/dist
+            /opt/fitness/deploy.sh --frontend-only
+          '
+
+      - name: 保留产物便于排查
+        if: success()
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist.tar.gz
+          retention-days: 7

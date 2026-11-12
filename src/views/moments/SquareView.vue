@@ -5,9 +5,14 @@ import { toast } from '../../utils'
 import NavBar from '../../components/NavBar.vue'
 import TabBar from '../../components/TabBar.vue'
 
+const PAGE_SIZE = 6
 const list = ref<any[]>([])
 const quota = ref<any>({ used: 0, limit: 4, canUpload: true })
 const loading = ref(true)
+const loadingMore = ref(false)
+const page = ref(1)
+const total = ref(0)
+const finished = computed(() => list.value.length >= total.value)
 const cols = computed(() => {
   const c: any[][] = [[], []]
   list.value.forEach((m, i) => c[i % 2].push(m))
@@ -20,14 +25,31 @@ const statusText: Record<string, string> = {
 
 async function load() {
   loading.value = true
+  page.value = 1
   try {
-    const [p, q] = await Promise.all([api.moments('all', 1, 40), api.momentQuota()])
+    const [p, q] = await Promise.all([api.moments('all', 1, PAGE_SIZE), api.momentQuota()])
     list.value = p.list || []
+    total.value = p.total || 0
     quota.value = q
   } catch (e: any) {
     if (e.message !== '登录已过期') toast(e.message)
   } finally {
     loading.value = false
+  }
+}
+
+async function loadMore() {
+  if (loading.value || loadingMore.value || finished.value) return
+  loadingMore.value = true
+  try {
+    const p = await api.moments('all', page.value + 1, PAGE_SIZE)
+    page.value = p.page || page.value + 1
+    list.value = list.value.concat(p.list || [])
+    total.value = p.total ?? total.value
+  } catch (e: any) {
+    if (e.message !== '登录已过期') toast(e.message)
+  } finally {
+    loadingMore.value = false
   }
 }
 
@@ -73,6 +95,10 @@ onMounted(load)
         </div>
       </div>
       <div v-else class="mom-empty"><span class="e-ico">📷</span>还没有已发布的图片<br />点右下角发布第一张吧</div>
+      <div v-if="list.length" class="load-more">
+        <button v-if="!finished" :disabled="loadingMore" @click="loadMore">{{ loadingMore ? '加载中…' : '加载更多' }}</button>
+        <span v-else>没有更多了</span>
+      </div>
     </div>
 
     <div class="fab" @click="$router.push('/moments/publish')">＋</div>

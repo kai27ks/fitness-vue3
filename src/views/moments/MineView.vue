@@ -1,25 +1,45 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { api } from '../../api'
 import { toast } from '../../utils'
 import NavBar from '../../components/NavBar.vue'
 import TabBar from '../../components/TabBar.vue'
 
+const PAGE_SIZE = 6
 const list = ref<any[]>([])
 const quota = ref<any>({ used: 0, limit: 4, canUpload: true })
 const loading = ref(true)
+const loadingMore = ref(false)
+const page = ref(1)
+const total = ref(0)
+const finished = computed(() => list.value.length >= total.value)
 
 const text: Record<string, string> = { PENDING: '审核中', APPROVED: '已发布', REJECTED: '已驳回' }
 
 async function load() {
   loading.value = true
+  page.value = 1
   try {
-    const [p, q] = await Promise.all([api.moments('mine', 1, 50), api.momentQuota()])
+    const [p, q] = await Promise.all([api.moments('mine', 1, PAGE_SIZE), api.momentQuota()])
     list.value = p.list || []
+    total.value = p.total || 0
     quota.value = q
   } catch (e: any) {
     if (e.message !== '登录已过期') toast(e.message)
   } finally { loading.value = false }
+}
+
+async function loadMore() {
+  if (loading.value || loadingMore.value || finished.value) return
+  loadingMore.value = true
+  try {
+    const p = await api.moments('mine', page.value + 1, PAGE_SIZE)
+    page.value = p.page || page.value + 1
+    list.value = list.value.concat(p.list || [])
+    total.value = p.total ?? total.value
+  } catch (e: any) {
+    if (e.message !== '登录已过期') toast(e.message)
+  } finally { loadingMore.value = false }
 }
 
 async function remove(m: any) {
@@ -27,7 +47,8 @@ async function remove(m: any) {
   try {
     await api.deleteMoment(m.id)
     toast('已删除')
-    load()
+    list.value = list.value.filter(x => x.id !== m.id)
+    total.value = Math.max(0, total.value - 1)
   } catch (e: any) { toast(e.message) }
 }
 
@@ -63,6 +84,10 @@ onMounted(load)
         </div>
       </div>
       <div v-else-if="!loading" class="mom-empty"><span class="e-ico">📷</span>还没有发布记录</div>
+      <div v-if="list.length" class="load-more">
+        <button v-if="!finished" :disabled="loadingMore" @click="loadMore">{{ loadingMore ? '加载中…' : '加载更多' }}</button>
+        <span v-else>没有更多了</span>
+      </div>
     </div>
 
     <div class="fab" @click="$router.push('/moments/publish')">＋</div>

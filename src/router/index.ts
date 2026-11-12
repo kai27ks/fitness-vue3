@@ -21,6 +21,7 @@ const routes = [
   // ===== 管理端 / 教练端 =====
   { path: '/admin/workbench', component: () => import('../views/admin/WorkbenchView.vue') },
   { path: '/admin/schedule', component: () => import('../views/admin/ScheduleView.vue') },
+  { path: '/admin/schedule/new', component: () => import('../views/admin/StaffBookingView.vue') },
   { path: '/admin/members', component: () => import('../views/admin/MembersView.vue') },
   { path: '/admin/members/add', component: () => import('../views/admin/MemberAddView.vue') },
   { path: '/admin/members/:id', component: () => import('../views/admin/MemberDetailView.vue') },

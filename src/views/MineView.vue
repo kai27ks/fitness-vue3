@@ -4,6 +4,7 @@ import { useRouter } from 'vue-router'
 import { api, clearSession } from '../api'
 import { toast } from '../utils'
 import TabBar from '../components/TabBar.vue'
+import SupportContact from '../components/SupportContact.vue'
 
 const router = useRouter()
 const me = ref<any>(null)
@@ -74,6 +75,7 @@ onMounted(async () => {
       </div>
 
       <div style="text-align: center; color: #B7BFC8; font-size: 11px; margin-top: 20px">私教工作室 · 会员端 V1.0</div>
+      <SupportContact />
     </div>
 
     <TabBar active="mine" />

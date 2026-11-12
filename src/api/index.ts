@@ -61,7 +61,34 @@ async function requestForm<T = any>(path: string, form: FormData): Promise<T> {
   return body.data as T
 }
 
+export interface SupportContact {
+  title: string
+  description: string
+  developerName: string
+  phone: string
+  email: string
+}
+
+export interface CoachAccount {
+  coachId: number
+  userId: number | null
+  phone: string | null
+  role: string | null
+  status: number | null
+  state: 'UNBOUND' | 'MISSING' | 'BOUND'
+}
+
+export interface StaffBookingMember { id: number; name: string; phone: string; coachId: number | null; coachName: string | null }
+export interface BookingPackageOption {
+  id: number; courseId: number; courseName: string; durationMin: number; remainSessions: number
+  startDate: string | null; expireDate: string | null; status: string; courseActive: boolean
+}
+export interface StaffBookingOptions { member: StaffBookingMember; packages: BookingPackageOption[] }
+export interface BookingSlot { start: string; end: string; status: string }
+export interface BookingSlotsResponse { date: string; durationMin: number; remainSessions: number; slots: BookingSlot[] }
+
 export const api = {
+  supportContact: () => request<SupportContact | null>('/support'),
   // 认证（短信链路已下线：仅账密登录 + 公众号认领）
   loginPassword: (phone: string, password: string) =>
     request<any>('/auth/login/password', { method: 'POST', body: JSON.stringify({ phone, password }) }),
@@ -122,6 +149,12 @@ export const api = {
   coachMe: () => request<any>('/coaches/me'),
   adminCoaches: () => request<any[]>('/admin/coaches'),
   createCoach: (d: any) => request<any>('/admin/coaches', { method: 'POST', body: JSON.stringify(d) }),
+  coachAccounts: () => request<CoachAccount[]>('/admin/coaches/accounts'),
+  coachAccount: (id: number) => request<CoachAccount>(`/admin/coaches/${id}/account`),
+  configureCoachAccount: (id: number, d: { mode: 'CREATE' | 'BIND'; phone: string; initialPassword?: string }) =>
+    request<CoachAccount>(`/admin/coaches/${id}/account`, { method: 'POST', body: JSON.stringify(d) }),
+  resetCoachPassword: (id: number, newPassword: string) =>
+    request<void>(`/admin/coaches/${id}/account/password`, { method: 'PUT', body: JSON.stringify({ newPassword }) }),
   coachQualifications: (id: number) => request<any[]>(`/coaches/${id}/qualifications`),
   addQualification: (id: number, d: any) => request<any>(`/coaches/${id}/qualifications`, { method: 'POST', body: JSON.stringify(d) }),
 
@@ -132,6 +165,12 @@ export const api = {
     request<any[]>(`/coaches/${id}/leave-conflict?startTime=${encodeURIComponent(start)}&endTime=${encodeURIComponent(end)}`),
 
   /* ===== 预约（管理端） ===== */
+  staffBookingMembers: () => request<StaffBookingMember[]>('/admin/bookings/members'),
+  staffBookingOptions: (memberId: number) => request<StaffBookingOptions>(`/admin/bookings/members/${memberId}/options`),
+  staffBookingSlots: (memberId: number, packageId: number, date: string) =>
+    request<BookingSlotsResponse>(`/admin/bookings/members/${memberId}/slots?${new URLSearchParams({ packageId: String(packageId), date })}`),
+  staffCreateBooking: (d: { memberId: number; packageId: number; date: string; startTime: string }) =>
+    request<{ bookingId: number; remainSessions: number }>('/admin/bookings', { method: 'POST', body: JSON.stringify(d) }),
   adminBookings: (q: Record<string, any> = {}) => {
     const p = new URLSearchParams()
     Object.entries(q).forEach(([k, v]) => { if (v !== undefined && v !== null && v !== '') p.append(k, String(v)) })
