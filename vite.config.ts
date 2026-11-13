@@ -15,7 +15,8 @@ export default defineConfig({
     proxy: {
       '/api': BACKEND,
       '/upload': BACKEND,
-      '/wechat': BACKEND
+      '/wechat/oauth': BACKEND,
+      '/wechat/event': BACKEND
     }
   }
 })
