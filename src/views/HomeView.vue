@@ -1,10 +1,20 @@
 <script setup lang="ts">
-import { computed, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import { api } from '../api'
 import TabBar from '../components/TabBar.vue'
 
+const route = useRoute()
 const home = ref<any>(null)
 const loading = ref(true)
+
+/** 「我的」页的教练团队 / 联系教练入口带 #coaches、#contact 锚点，等数据渲染完再滚过去 */
+async function scrollToHash() {
+  if (!route.hash) return
+  await nextTick()
+  const el = document.querySelector(route.hash) as HTMLElement | null
+  if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' })
+}
 
 const ringStyle = computed(() => {
   const p = home.value?.packageInfo
@@ -20,8 +30,11 @@ onMounted(async () => {
     if (e.message !== '登录已过期') alert(e.message)
   } finally {
     loading.value = false
+    scrollToHash()
   }
 })
+
+watch(() => route.hash, () => scrollToHash())
 </script>
 
 <template>
@@ -59,7 +72,7 @@ onMounted(async () => {
         ⚠️ 你的专属教练 {{ home.coach.name }} 今日请假，如需约课请联系前台改绑教练。
       </div>
 
-      <div class="sec-title"><b>教练团队</b><span style="font-size: 12px; color: var(--sub)">共 {{ home?.coaches?.length || 0 }} 位</span></div>
+      <div class="sec-title" id="coaches"><b>教练团队</b><span style="font-size: 12px; color: var(--sub)">共 {{ home?.coaches?.length || 0 }} 位</span></div>
       <div class="coach-row">
         <router-link v-for="c in home?.coaches || []" :key="c.id" class="coach-c" :to="`/coach/${c.id}`">
           <div class="avatar">{{ c.name[0] }}<em>✓</em></div>
@@ -80,7 +93,7 @@ onMounted(async () => {
         <span class="arr">›</span>
       </div>
 
-      <div class="sec-title"><b>联系我们</b></div>
+      <div class="sec-title" id="contact"><b>联系我们</b></div>
       <div class="contact">
         <div class="info">
           <b>{{ home?.studio?.name }}</b>

@@ -24,6 +24,7 @@ const routes = [
   { path: '/admin/schedule/new', component: () => import('../views/admin/StaffBookingView.vue') },
   { path: '/admin/members', component: () => import('../views/admin/MembersView.vue') },
   { path: '/admin/members/add', component: () => import('../views/admin/MemberAddView.vue') },
+  { path: '/admin/members/import', component: () => import('../views/admin/MemberImportView.vue') },
   { path: '/admin/members/:id', component: () => import('../views/admin/MemberDetailView.vue') },
   { path: '/admin/packages', component: () => import('../views/admin/PackagesAdminView.vue') },
   { path: '/admin/courses', component: () => import('../views/admin/CoursesView.vue') },

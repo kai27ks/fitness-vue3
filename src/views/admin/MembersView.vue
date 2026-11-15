@@ -48,7 +48,10 @@ onMounted(load)
         <input v-model="keyword" placeholder="搜索姓名 / 手机号" @input="load" />
       </div>
 
-      <router-link to="/admin/claim-requests" class="banner info" style="text-decoration:none;margin-top:12px">
+      <router-link to="/admin/members/import" class="banner info" style="text-decoration:none;margin-top:12px">
+        📥 批量导入旧会员：上传「会员绑卡」Excel，预览确认后一次性建档 →
+      </router-link>
+      <router-link to="/admin/claim-requests" class="banner info" style="text-decoration:none">
         📋 待核实认领申请：手机号未命中的微信用户，点此核实并绑定档案 →
       </router-link>
       <router-link to="/admin/notify-logs" class="banner info" style="text-decoration:none">

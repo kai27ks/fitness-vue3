@@ -13,8 +13,8 @@ const menus = [
   { label: '我的预约', path: '/bookings', icon: 'booking', cls: 'i-green' },
   { label: '我的课包', path: '/packages', icon: 'pkg', cls: 'i-blue' },
   { label: '会员风采', path: '/moments/mine', icon: 'moment', cls: 'i-green' },
-  { label: '教练团队', path: '/', icon: 'coach', cls: 'i-purple' },
-  { label: '联系教练', path: '/', icon: 'phone', cls: 'i-orange' }
+  { label: '教练团队', path: '/#coaches', icon: 'coach', cls: 'i-purple' },
+  { label: '联系教练', path: '/#contact', icon: 'phone', cls: 'i-orange' }
 ]
 
 const icons: Record<string, string> = {
@@ -64,7 +64,7 @@ onMounted(async () => {
 
     <div class="scroll-area" style="padding-top: 0">
       <div class="menu" style="margin-top: 52px">
-        <div v-for="m in menus" :key="m.label" class="mi" @click="m.path !== '/' ? router.push(m.path) : router.push('/#coaches')">
+        <div v-for="m in menus" :key="m.label" class="mi" @click="router.push(m.path)">
           <i :class="m.cls"><svg viewBox="0 0 24 24" v-html="icons[m.icon]"></svg></i>
           {{ m.label }}<span class="arr">›</span>
         </div>

@@ -180,10 +180,25 @@ export const api = {
     request<void>(`/admin/bookings/${id}`, { method: 'DELETE', body: JSON.stringify({ reason: reason || '' }) }),
   manualCheckIn: (id: number) => request<void>(`/admin/bookings/${id}/manual-checkin`, { method: 'POST' }),
 
+  /* ===== 旧会员批量导入（管理员） ===== */
+  memberImportPreview: (file: File) => {
+    const f = new FormData()
+    f.append('file', file)
+    return requestForm<any>('/admin/members/import/preview', f)
+  },
+  memberImportCommit: (file: File) => {
+    const f = new FormData()
+    f.append('file', file)
+    return requestForm<any>('/admin/members/import/commit', f)
+  },
+
   /* ===== 报表 / 工作台 ===== */
   dashboard: () => request<any>('/admin/dashboard'),
   reportFinance: () => request<any>('/reports/finance'),
   reportCourses: () => request<any>('/reports/courses'),
+  // 课程统计：range = total | month | week，按课程名分组并按教练细分
+  reportCourseStats: (range: 'total' | 'month' | 'week' = 'total') =>
+    request<any>(`/reports/course-stats?range=${range}`),
 
   /* ===== 会员风采 ===== */
   momentConfig: () => request<any>('/moments/config'),
