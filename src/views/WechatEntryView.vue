@@ -31,7 +31,9 @@ onMounted(async () => {
     window.history.replaceState({}, '', '/wechat/entry')
     const redirect = res.redirect || '/'
     if (res.needClaim) {
-      router.replace({ path: '/wechat/bind', query: { ticket: res.claimTicket, redirect } })
+      // 教练入口签发的票据走「手机号 + 密码」绑定页，会员走认领码绑定页
+      const bindPath = res.intent === 'COACH' ? '/wechat/coach-bind' : '/wechat/bind'
+      router.replace({ path: bindPath, query: { ticket: res.claimTicket, redirect } })
     } else {
       setSession(res.token, res.role, 'WECHAT')
       if (res.needFollow) {

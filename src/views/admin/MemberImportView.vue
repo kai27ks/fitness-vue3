@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 import { api } from '../../api'
 import { toast } from '../../utils'
@@ -12,6 +12,8 @@ const preview = ref<any>(null)
 const result = ref<any>(null)
 const loading = ref(false)
 const committing = ref(false)
+// 教练必须先录入：缺教练时禁止提交
+const blocked = computed(() => !!(preview.value?.missingCoaches && preview.value.missingCoaches.length))
 
 function onPick(e: Event) {
   const input = e.target as HTMLInputElement
@@ -43,6 +45,10 @@ async function doPreview() {
 
 async function doCommit() {
   if (!file.value || committing.value) return
+  if (blocked.value) {
+    toast('有教练还没录入教练管理，请先补录后再导入')
+    return
+  }
   const n = preview.value?.memberCount || 0
   if (!confirm(`确认导入 ${n} 位会员？将同时创建登录账号与课包，已存在的手机号会被跳过。`)) return
   committing.value = true
@@ -85,11 +91,29 @@ async function doCommit() {
           <div><b>{{ preview.packageCount }}</b><small>课包</small></div>
           <div><b :class="{ bad: preview.invalidRows > 0 }">{{ preview.invalidRows }}</b><small>异常行</small></div>
         </div>
+        <div v-if="preview.dedupRows" class="imp-tip" style="margin:-6px 0 12px">
+          已自动去重 <b>{{ preview.dedupRows }}</b> 行完全相同的重复记录（同一会员/课程/教练且所有字段一致，只保留一条）
+        </div>
+
+        <div v-if="preview.missingCoaches && preview.missingCoaches.length" class="imp-block">
+          <div class="imp-title bad">有 {{ preview.missingCoaches.length }} 位教练还没录入，无法导入</div>
+          <div class="imp-tags">
+            <span v-for="c in preview.missingCoaches" :key="c" class="imp-tag miss">{{ c }}</span>
+          </div>
+          <div class="imp-tip">
+            导入按「教练名称」对照，请先到
+            <a href="javascript:;" style="color:var(--primary-deep)" @click="router.push('/admin/coaches')">教练管理</a>
+            录入这些教练（名称需与 Excel 完全一致），然后重新解析。
+          </div>
+        </div>
 
         <div class="imp-sec">
           <div class="imp-title">课程（{{ preview.courseTypes.length }}）</div>
           <div class="imp-tags">
             <span v-for="c in preview.courseTypes" :key="c" class="imp-tag">{{ c }}</span>
+          </div>
+          <div v-if="preview.coursesToCreate && preview.coursesToCreate.length" class="imp-tip">
+            其中 {{ preview.coursesToCreate.length }} 个课程模板不存在，导入时会自动创建：{{ preview.coursesToCreate.join('、') }}
           </div>
         </div>
         <div class="imp-sec">
@@ -128,8 +152,8 @@ async function doCommit() {
           <div><b :class="{ bad: result.failedRows > 0 }">{{ result.failedRows }}</b><small>失败行</small></div>
         </div>
         <div class="cap" style="margin:10px 0 0">
-          新建课程 {{ result.createdCourses }} 个、教练 {{ result.createdCoaches }} 位；会员默认密码 <b>123456</b>，
-          认领码在会员详情页查看。
+          批次号 <b>#{{ result.batchId }}</b>；自动新建课程 {{ result.createdCourses }} 个；
+          自动去重 {{ result.dedupRows }} 行；会员默认密码 <b>123456</b>，认领码在会员详情页查看。
         </div>
         <div v-if="result.errors && result.errors.length" class="imp-sec">
           <div class="imp-title bad">失败明细</div>
@@ -139,10 +163,13 @@ async function doCommit() {
       </div>
 
       <div v-if="preview" style="padding:6px 0 20px">
-        <button class="btn" :disabled="committing" @click="doCommit">
-          {{ committing ? '导入中，请稍候…' : '确认导入' }}
+        <button class="btn" :disabled="committing || blocked" @click="doCommit">
+          {{ committing ? '导入中，请稍候…' : (blocked ? '请先录入缺失教练' : '确认导入') }}
         </button>
-        <div class="imp-tip">导入规则：同一会员同一课种合并为一条课包（课时相加）；总课时=剩余、金额=0、有效期=导入日+365 天。</div>
+        <div class="imp-tip">
+          导入规则：同一会员同一课种合并为一条课包（课时相加）；总课时=剩余、金额=0、有效期=导入日+365 天；
+          每次导入会留批次号与原始行，可按批次回滚。
+        </div>
       </div>
     </div>
   </div>
@@ -162,6 +189,8 @@ async function doCommit() {
 .imp-tags { display: flex; flex-wrap: wrap; gap: 6px; }
 .imp-tag { font-size: 11px; padding: 3px 9px; border-radius: 8px; background: #EAF1FF; color: #3C6FD1; }
 .imp-tag.coach { background: #EAF6F1; color: var(--primary-deep); }
+.imp-tag.miss { background: #FDECEC; color: var(--warn); }
+.imp-block { background: #FFF7F6; border: 1px solid #F7D7D3; border-radius: 12px; padding: 12px; margin-bottom: 14px; }
 .imp-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--line); }
 .imp-row:last-child { border: none; }
 .imp-main b { font-size: 13px; }

@@ -1,10 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
-import { api, type CoachAccount } from '../api'
+import { api, type CoachAccount, type CoachWechatBind } from '../api'
 import { toast } from '../utils'
 
 const props = defineProps<{ coachId: number }>()
 const account = ref<CoachAccount | null>(null)
+const wxBind = ref<CoachWechatBind | null>(null)
 const loading = ref(true)
 const error = ref('')
 const saving = ref(false)
@@ -15,13 +16,34 @@ const reset = reactive({ password: '', confirmPassword: '' })
 const bound = computed(() => account.value?.state === 'BOUND')
 const statusText = computed(() => account.value?.state === 'MISSING' ? '关联异常' : !bound.value ? '未开通登录账号' : account.value?.status === 1 ? '可登录' : '账号已停用')
 const roleText = computed(() => account.value?.role === 'ADMIN' ? '管理员（兼任教练）' : account.value?.role === 'COACH' ? '教练' : '其他角色')
+const wxBindText = computed(() => !wxBind.value ? '绑定状态读取中' : wxBind.value.bound ? '微信已绑定' : '微信未绑定')
+const wxBindDetail = computed(() => {
+  const w = wxBind.value
+  if (!w) return ''
+  if (!w.bound) return '教练从公众号进入时，需用手机号 + 密码完成绑定。'
+  return `已绑定微信${w.nickname ? `（${w.nickname}）` : ''}${w.openidTail ? `，标识尾号 ${w.openidTail}` : ''}。`
+})
 
 async function load() {
   loading.value = true
   error.value = ''
-  try { account.value = await api.coachAccount(props.coachId) }
-  catch (e: any) { error.value = e.message || '账号信息加载失败' }
+  try {
+    account.value = await api.coachAccount(props.coachId)
+    wxBind.value = await api.coachWechatBind(props.coachId)
+  } catch (e: any) { error.value = e.message || '账号信息加载失败' }
   finally { loading.value = false }
+}
+
+async function unbindWechat() {
+  if (saving.value) return
+  if (!confirm('解绑后该教练从公众号进入需重新用手机号 + 密码绑定，确认解绑？')) return
+  saving.value = true
+  try {
+    await api.unbindCoachWechat(props.coachId)
+    toast('已解绑微信')
+    load()
+  } catch (e: any) { toast(e.message) }
+  finally { saving.value = false }
 }
 
 function clearSetup() {
@@ -81,6 +103,11 @@ onMounted(load)
       <template v-if="bound">
         <dl class="account-info"><div><dt>登录手机号</dt><dd>{{ account.phone }}</dd></div><div><dt>账号角色</dt><dd>{{ roleText }}</dd></div></dl>
         <p class="account-note">教练使用这个手机号和密码，在统一登录页登录。</p>
+        <div class="wechat-bind">
+          <div class="wechat-bind-head"><span>公众号微信绑定</span><span class="pill" :class="wxBind?.bound ? 'wait' : 'warn'">{{ wxBindText }}</span></div>
+          <p class="account-note">{{ wxBindDetail }}</p>
+          <button v-if="wxBind?.bound" class="btn-ghost" type="button" :disabled="saving" @click="unbindWechat">解绑微信</button>
+        </div>
         <button v-if="account.role === 'COACH' && !showReset" class="btn-ghost" type="button" @click="showReset = true">重置登录密码</button>
         <p v-if="account.role !== 'COACH'" class="account-note">此账号保留原有角色，密码由对应的账号管理流程维护。</p>
         <form v-if="showReset" class="account-form" @submit.prevent="resetPassword">
@@ -122,6 +149,9 @@ onMounted(load)
 .account-info dt { color: #687582; }
 .account-info dd { font-weight: 600; overflow-wrap: anywhere; }
 .account-note { color: #687582; font-size: 12px; line-height: 1.8; margin: 12px 0; }
+.wechat-bind { margin-top: 14px; border-top: 1px solid var(--line); padding-top: 14px; }
+.wechat-bind-head { display: flex; flex-wrap: wrap; gap: 8px; justify-content: space-between; align-items: center; font-size: 13px; font-weight: 600; }
+.wechat-bind .account-note { margin: 10px 0; }
 .account-error { font-size: 13px; color: var(--warn); display: grid; gap: 12px; margin-top: 14px; }
 .account-form { display: grid; gap: 10px; margin-top: 14px; border-top: 1px solid var(--line); padding-top: 14px; }
 .account-form > label { font-size: 12px; font-weight: 600; }

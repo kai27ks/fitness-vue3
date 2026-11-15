@@ -6,6 +6,7 @@ const routes = [
   // 公众号入口：只持一次性票据，不要求登录态
   { path: '/wechat/entry', component: () => import('../views/WechatEntryView.vue'), meta: { public: true } },
   { path: '/wechat/bind', component: () => import('../views/WechatBindView.vue'), meta: { public: true } },
+  { path: '/wechat/coach-bind', component: () => import('../views/WechatCoachBindView.vue'), meta: { public: true } },
   { path: '/wechat/follow', component: () => import('../views/WechatFollowView.vue'), meta: { public: true } },
   { path: '/', component: () => import('../views/HomeView.vue') },
   { path: '/booking', component: () => import('../views/BookingView.vue') },

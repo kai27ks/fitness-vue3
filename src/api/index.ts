@@ -23,7 +23,9 @@ function unauthorized() {
   setToken(null)
   if (getSource() === 'WECHAT') {
     const redirect = encodeURIComponent(location.pathname + location.search)
-    window.location.replace(`/wechat/oauth/entry?redirect=${redirect}`)
+    // 教练走静默授权入口，避免重新弹授权页
+    const role = getRole() === 'COACH' ? '&role=COACH' : ''
+    window.location.replace(`/wechat/oauth/entry?redirect=${redirect}${role}`)
   } else {
     window.location.href = '/login'
   }
@@ -78,6 +80,13 @@ export interface CoachAccount {
   state: 'UNBOUND' | 'MISSING' | 'BOUND'
 }
 
+export interface CoachWechatBind {
+  bound: boolean
+  openidTail: string | null
+  nickname: string | null
+  avatarUrl: string | null
+}
+
 export interface StaffBookingMember { id: number; name: string; phone: string; coachId: number | null; coachName: string | null }
 export interface BookingPackageOption {
   id: number; courseId: number; courseName: string; durationMin: number; remainSessions: number
@@ -96,6 +105,9 @@ export const api = {
     request<any>('/auth/wechat/ticket', { method: 'POST', body: JSON.stringify({ ticket }) }),
   wechatClaim: (d: { claimTicket: string; phone: string; claimCode: string }) =>
     request<any>('/auth/wechat/claim', { method: 'POST', body: JSON.stringify(d) }),
+  // 教练侧绑定：只能用账号密码，票据必须来自「教练工作台」入口
+  wechatCoachClaim: (d: { claimTicket: string; phone: string; password: string }) =>
+    request<any>('/auth/wechat/coach-claim', { method: 'POST', body: JSON.stringify(d) }),
   // 会员
   home: () => request<any>('/member/home'),
   packages: () => request<any[]>('/member/packages'),
@@ -155,6 +167,10 @@ export const api = {
     request<CoachAccount>(`/admin/coaches/${id}/account`, { method: 'POST', body: JSON.stringify(d) }),
   resetCoachPassword: (id: number, newPassword: string) =>
     request<void>(`/admin/coaches/${id}/account/password`, { method: 'PUT', body: JSON.stringify({ newPassword }) }),
+  // 教练微信绑定状态 / 解绑（解绑后教练需重新用手机号+密码绑定）
+  coachWechatBind: (id: number) => request<CoachWechatBind>(`/admin/coaches/${id}/wechat-bind`),
+  unbindCoachWechat: (id: number) =>
+    request<void>(`/admin/coaches/${id}/wechat-bind`, { method: 'DELETE' }),
   coachQualifications: (id: number) => request<any[]>(`/coaches/${id}/qualifications`),
   addQualification: (id: number, d: any) => request<any>(`/coaches/${id}/qualifications`, { method: 'POST', body: JSON.stringify(d) }),
 
