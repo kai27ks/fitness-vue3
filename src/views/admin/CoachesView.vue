@@ -52,7 +52,7 @@ async function submit() {
   if (!form.name.trim()) return toast('请填写教练姓名')
   if (createLogin.value) {
     if (!/^1\d{10}$/.test(form.phone.trim())) return toast('请输入正确的11位手机号')
-    if (form.initialPassword.length < 8 || form.initialPassword.length > 64 || !form.initialPassword.trim()) return toast('请设置8～64位初始密码')
+    if (form.initialPassword.length < 6 || form.initialPassword.length > 64 || !form.initialPassword.trim()) return toast('请设置6～64位初始密码')
     if (form.initialPassword !== form.confirmPassword) return toast('两次输入的密码不一致')
   }
   saving.value = true
@@ -84,8 +84,8 @@ onMounted(load)
         <label class="create-login"><input v-model="createLogin" type="checkbox" :disabled="saving" @change="form.initialPassword = ''; form.confirmPassword = ''" /> 同时开通登录账号</label>
         <template v-if="createLogin">
           <label for="coach-create-phone">登录手机号</label><input id="coach-create-phone" v-model="form.phone" class="input" type="tel" inputmode="tel" maxlength="11" required :disabled="saving" placeholder="教练本人手机号" />
-          <label for="coach-create-password">初始密码</label><input id="coach-create-password" v-model="form.initialPassword" class="input" type="password" autocomplete="new-password" minlength="8" maxlength="64" required :disabled="saving" placeholder="8～64位密码" />
-          <label for="coach-create-confirm">再次输入初始密码</label><input id="coach-create-confirm" v-model="form.confirmPassword" class="input" type="password" autocomplete="new-password" minlength="8" maxlength="64" required :disabled="saving" />
+          <label for="coach-create-password">初始密码</label><input id="coach-create-password" v-model="form.initialPassword" class="input" type="password" autocomplete="new-password" minlength="6" maxlength="64" required :disabled="saving" placeholder="6～64位密码" />
+          <label for="coach-create-confirm">再次输入初始密码</label><input id="coach-create-confirm" v-model="form.confirmPassword" class="input" type="password" autocomplete="new-password" minlength="6" maxlength="64" required :disabled="saving" />
         </template>
         <p v-else class="create-note">仅建立教练档案，之后可在教练详情中开通或关联登录账号。</p>
         <button class="btn-ghost" type="submit" :disabled="saving" style="justify-content:center">{{ saving ? '保存中…' : '确认新增' }}</button>

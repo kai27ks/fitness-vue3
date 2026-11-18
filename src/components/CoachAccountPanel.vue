@@ -52,8 +52,8 @@ function clearSetup() {
 }
 
 function validPassword(password: string, confirmation: string) {
-  if (password.length < 8 || password.length > 64 || !password.trim()) {
-    toast('请设置8～64位密码'); return false
+  if (password.length < 6 || password.length > 64 || !password.trim()) {
+    toast('请设置6～64位密码'); return false
   }
   if (password !== confirmation) { toast('两次输入的密码不一致'); return false }
   return true
@@ -113,9 +113,9 @@ onMounted(load)
         <form v-if="showReset" class="account-form" @submit.prevent="resetPassword">
           <p class="account-note">原密码无法查看。设置新密码后，请线下告知教练。</p>
           <label :for="`coach-reset-${coachId}`">新密码</label>
-          <input :id="`coach-reset-${coachId}`" v-model="reset.password" class="input" type="password" autocomplete="new-password" minlength="8" maxlength="64" required placeholder="8～64位密码" :disabled="saving" />
+          <input :id="`coach-reset-${coachId}`" v-model="reset.password" class="input" type="password" autocomplete="new-password" minlength="6" maxlength="64" required placeholder="6～64位密码" :disabled="saving" />
           <label :for="`coach-reset-confirm-${coachId}`">再次输入新密码</label>
-          <input :id="`coach-reset-confirm-${coachId}`" v-model="reset.confirmPassword" class="input" type="password" autocomplete="new-password" minlength="8" maxlength="64" required :disabled="saving" />
+          <input :id="`coach-reset-confirm-${coachId}`" v-model="reset.confirmPassword" class="input" type="password" autocomplete="new-password" minlength="6" maxlength="64" required :disabled="saving" />
           <div class="account-actions"><button type="button" class="btn-ghost" :disabled="saving" @click="cancelReset">取消</button><button class="btn" type="submit" :disabled="saving">{{ saving ? '保存中…' : '确认重置密码' }}</button></div>
         </form>
       </template>
@@ -129,9 +129,9 @@ onMounted(load)
           <input :id="`coach-phone-${coachId}`" v-model="setup.phone" class="input" type="tel" inputmode="tel" autocomplete="off" maxlength="11" required placeholder="教练本人11位手机号" :disabled="saving" />
           <template v-if="setup.mode === 'CREATE'">
             <label :for="`coach-password-${coachId}`">初始密码</label>
-            <input :id="`coach-password-${coachId}`" v-model="setup.password" class="input" type="password" autocomplete="new-password" minlength="8" maxlength="64" required placeholder="8～64位密码" :disabled="saving" />
+            <input :id="`coach-password-${coachId}`" v-model="setup.password" class="input" type="password" autocomplete="new-password" minlength="6" maxlength="64" required placeholder="6～64位密码" :disabled="saving" />
             <label :for="`coach-confirm-${coachId}`">再次输入初始密码</label>
-            <input :id="`coach-confirm-${coachId}`" v-model="setup.confirmPassword" class="input" type="password" autocomplete="new-password" minlength="8" maxlength="64" required :disabled="saving" />
+            <input :id="`coach-confirm-${coachId}`" v-model="setup.confirmPassword" class="input" type="password" autocomplete="new-password" minlength="6" maxlength="64" required :disabled="saving" />
           </template>
           <div class="account-actions"><button class="btn-ghost" type="button" :disabled="saving" @click="clearSetup">取消</button><button class="btn" type="submit" :disabled="saving">{{ saving ? '保存中…' : setup.mode === 'CREATE' ? '创建并关联' : '确认关联账号' }}</button></div>
         </form>

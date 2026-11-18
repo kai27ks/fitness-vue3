@@ -212,8 +212,8 @@ export const api = {
   dashboard: () => request<any>('/admin/dashboard'),
   reportFinance: () => request<any>('/reports/finance'),
   reportCourses: () => request<any>('/reports/courses'),
-  // 课程统计：range = total | month | week，按课程名分组并按教练细分
-  reportCourseStats: (range: 'total' | 'month' | 'week' = 'total') =>
+  // 课程统计：range = day | week | month | total，按课程名分组并按教练细分
+  reportCourseStats: (range: 'day' | 'week' | 'month' | 'total' = 'total') =>
     request<any>(`/reports/course-stats?range=${range}`),
 
   /* ===== 会员风采 ===== */

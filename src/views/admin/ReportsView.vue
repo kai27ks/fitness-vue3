@@ -11,12 +11,13 @@ const course = ref<any>(null)
 const loading = ref(true)
 
 /* ===== 课程统计 ===== */
-const statsRange = ref<'total' | 'month' | 'week'>('month')
+type StatsRange = 'day' | 'week' | 'month' | 'total'
+const statsRange = ref<StatsRange>('month')
 const stats = ref<any>(null)
 const statsLoading = ref(false)
 const openCourse = ref('')
 
-async function loadStats(range: 'total' | 'month' | 'week') {
+async function loadStats(range: StatsRange) {
   statsRange.value = range
   statsLoading.value = true
   try {
@@ -29,6 +30,49 @@ async function loadStats(range: 'total' | 'month' | 'week') {
 }
 
 const maxBar = (arr: any[]) => Math.max(1, ...arr.map(x => x.value || 0))
+
+const statsRangeLabel = computed(() => {
+  const s = stats.value
+  if (!s) return ''
+  if (!s.from || s.from === '全部') return '全部时间'
+  return `${s.from} ~ ${s.to}`
+})
+
+const RANGE_NAMES: Record<StatsRange, string> = { day: '当日', week: '本周', month: '本月', total: '累计' }
+const rangeName = computed(() => RANGE_NAMES[statsRange.value])
+// 汇总口径与「课程统计」卡片保持同源，取消率 = 同范围取消数 / 同范围预约数
+const statsSummary = computed(() => {
+  const s = stats.value
+  if (!s) return null
+  const bookings = Number(s.totalBookings) || 0
+  const canceled = Number(s.totalCanceled) || 0
+  return {
+    classes: Number(s.totalClasses) || 0,
+    bookings,
+    canceled,
+    cancelRate: bookings ? Math.round(canceled * 1000 / bookings) / 10 : 0
+  }
+})
+const heroClasses = computed(() => statsSummary.value ? statsSummary.value.classes : (course.value?.totalConsumed ?? 0))
+const heroCancelRate = computed(() => statsSummary.value ? statsSummary.value.cancelRate : (course.value?.cancelRate ?? 0))
+
+// 教练消课排行：直接由当前范围的课程统计（已按课程 + 教练细分）聚合，跟随 range 联动
+const statsCoachRank = computed(() => {
+  const s = stats.value
+  if (!s) return []
+  const map = new Map<string, { name: string; classes: number; bookings: number }>()
+  for (const c of s.courses || []) {
+    for (const co of c.coaches || []) {
+      const cur = map.get(co.coachName) || { name: co.coachName, classes: 0, bookings: 0 }
+      cur.classes += co.classes || 0
+      cur.bookings += co.bookings || 0
+      map.set(co.coachName, cur)
+    }
+  }
+  return [...map.values()]
+    .map(x => ({ ...x, ratePercent: x.bookings ? Math.round(x.classes * 100 / x.bookings) : 0 }))
+    .sort((a, b) => b.classes - a.classes || b.bookings - a.bookings || a.name.localeCompare(b.name))
+})
 
 const financeBars = computed(() => {
   const arr = finance.value?.dailyRevenue || []
@@ -85,16 +129,17 @@ onMounted(async () => {
 
     <div v-else-if="course" class="scroll-area" style="padding-top:0">
       <div class="pkg-hero" style="margin:0 0 12px;padding:18px 20px;background:linear-gradient(135deg,#4E8CFF,#3A6FE0)">
-        <small>累计消课 / 取消率</small>
-        <h2 style="margin:6px 0 0;font-size:30px">{{ course.totalConsumed }} 节 <span style="font-size:14px;opacity:.8">· 取消率 {{ course.cancelRate }}%</span></h2>
+        <small>{{ rangeName }}消课 / 取消率</small>
+        <h2 style="margin:6px 0 0;font-size:30px">{{ heroClasses }} 节 <span style="font-size:14px;opacity:.8">· 取消率 {{ heroCancelRate }}%</span></h2>
       </div>
       <div class="chart-card">
         <h4>课程统计</h4>
-        <div class="cap">按消课节数排序 · 点课程展开教练细分</div>
+        <div class="cap">按消课节数排序 · 点课程展开教练细分<template v-if="stats">（{{ statsRangeLabel }}）</template></div>
         <div class="range-tabs">
-          <span :class="{ on: statsRange === 'total' }" @click="loadStats('total')">总计</span>
-          <span :class="{ on: statsRange === 'month' }" @click="loadStats('month')">本月</span>
+          <span :class="{ on: statsRange === 'day' }" @click="loadStats('day')">当日</span>
           <span :class="{ on: statsRange === 'week' }" @click="loadStats('week')">本周</span>
+          <span :class="{ on: statsRange === 'month' }" @click="loadStats('month')">本月</span>
+          <span :class="{ on: statsRange === 'total' }" @click="loadStats('total')">总计</span>
         </div>
         <div v-if="statsLoading" class="cap" style="margin:0">加载中…</div>
         <template v-else-if="stats && stats.courses.length">
@@ -130,14 +175,14 @@ onMounted(async () => {
         </div>
       </div>
       <div class="chart-card">
-        <h4>教练消课排行</h4><div class="cap">单位：节 · 签到率</div>
-        <div v-for="(m, i) in course.coachRank" :key="i" class="rank">
+        <h4>教练消课排行</h4><div class="cap">{{ rangeName }}口径 · 单位：节 · 签到率 <template v-if="stats">（{{ statsRangeLabel }}）</template></div>
+        <div v-for="(m, i) in statsCoachRank" :key="i" class="rank">
           <span class="no" :class="{ g: i === 0 }">{{ i + 1 }}</span>
           <span class="name">{{ m.name }}</span>
           <span class="pill info">{{ m.ratePercent }}%</span>
           <span class="val">{{ m.classes }} 节</span>
         </div>
-        <div v-if="!course.coachRank.length" style="padding:10px 0;color:var(--sub);font-size:12px">暂无数据</div>
+        <div v-if="!statsCoachRank.length" style="padding:10px 0;color:var(--sub);font-size:12px">该时间段暂无数据</div>
       </div>
     </div>
 
