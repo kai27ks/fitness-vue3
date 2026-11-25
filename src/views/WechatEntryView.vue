@@ -9,7 +9,9 @@ const error = ref('')
 const loading = ref(true)
 
 function retry() {
-  window.location.href = '/wechat/oauth/entry?redirect=/'
+  const coach = route.query.role === 'COACH'
+  const redirect = encodeURIComponent(coach ? '/admin/workbench' : '/')
+  window.location.href = `/wechat/oauth/entry?role=${coach ? 'COACH' : 'MEMBER'}&redirect=${redirect}`
 }
 
 onMounted(async () => {

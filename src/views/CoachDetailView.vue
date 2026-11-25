@@ -1,12 +1,18 @@
 <script setup lang="ts">
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute } from 'vue-router'
 import { api } from '../api'
 import NavBar from '../components/NavBar.vue'
 
 const route = useRoute()
 const detail = ref<any>(null)
+const rating = ref({ count: 0, average: 0 })
 const loading = ref(true)
+
+const ratingStars = computed(() => {
+  const n = Math.max(0, Math.min(5, Math.round(rating.value.average || 0)))
+  return '★'.repeat(n) + '☆'.repeat(5 - n)
+})
 
 onMounted(async () => {
   try {
@@ -16,6 +22,7 @@ onMounted(async () => {
   } finally {
     loading.value = false
   }
+  try { rating.value = await api.coachRating(route.params.id) } catch { rating.value = { count: 0, average: 0 } }
 })
 </script>
 
@@ -28,6 +35,11 @@ onMounted(async () => {
         <NavBar :title="detail.coach.name" right="" />
         <div class="ava">{{ detail.coach.name[0] }}</div>
         <h2>{{ detail.coach.name }}</h2>
+        <div class="cd-rating">
+          <span class="rv-stars">{{ ratingStars }}</span>
+          <b v-if="rating.count">{{ rating.average }}</b>
+          <small>{{ rating.count ? `· ${rating.count} 条评价` : '暂无评价' }}</small>
+        </div>
         <div class="tags">
           <span>🏅 专业认证</span>
           <span>1V1 专属</span>

@@ -80,6 +80,20 @@ export interface CoachAccount {
   state: 'UNBOUND' | 'MISSING' | 'BOUND'
 }
 
+export interface SessionLog {
+  id: number
+  type: 'CONSUME' | 'PURCHASE' | 'ADJUST' | 'IMPORT'
+  changeSessions: number
+  remainAfter: number | null
+  packageId: number | null
+  memberId: number
+  courseName: string
+  coachName: string | null
+  bookingTime: string | null
+  remark: string | null
+  createTime: string
+}
+
 export interface CoachWechatBind {
   bound: boolean
   openidTail: string | null
@@ -112,6 +126,12 @@ export const api = {
   home: () => request<any>('/member/home'),
   packages: () => request<any[]>('/member/packages'),
   me: () => request<any>('/member/me'),
+  // 课时流水（购买 / 消课 / 调整），packageId 为空则返回该会员全部课包
+  sessionLogs: (packageId?: number, limit = 100) => {
+    const p = new URLSearchParams({ limit: String(limit) })
+    if (packageId) p.set('packageId', String(packageId))
+    return request<SessionLog[]>(`/member/session-logs?${p}`)
+  },
   // 教练
   coachDetail: (id: number | string) => request<any>(`/coaches/${id}`),
   slots: (coachId: number | string, date: string, courseId: number | string) =>
@@ -121,6 +141,12 @@ export const api = {
   myBookings: (tab?: string) => request<any[]>(`/bookings/my${tab ? '?tab=' + tab : ''}`),
   cancelBooking: (id: number, reason?: string) =>
     request<void>(`/bookings/${id}/cancel`, { method: 'POST', body: JSON.stringify({ reason: reason || '' }) }),
+  // 评价：满意度 1~5 星，一次课只能评一次
+  reviewBooking: (id: number, rating: number) =>
+    request<{ count: number; average: number }>(`/bookings/${id}/review`, { method: 'POST', body: JSON.stringify({ rating }) }),
+  coachRating: (coachId: number | string) =>
+    request<{ count: number; average: number }>(`/coaches/${coachId}/rating`),
+  coachMyReviews: (limit = 20) => request<any>(`/coaches/me/reviews?limit=${limit}`),
 
   /* ===== 课程模板 ===== */
   courses: () => request<any[]>('/courses'),
@@ -149,6 +175,11 @@ export const api = {
     request<any[]>(`/admin/members${keyword ? `?keyword=${encodeURIComponent(keyword)}` : ''}${coachId ? (keyword ? '&' : '?') + 'coachId=' + coachId : ''}`),
   createMember: (d: any) => request<any>('/admin/members', { method: 'POST', body: JSON.stringify(d) }),
   memberDetail: (id: number) => request<any>(`/admin/members/${id}`),
+  adminMemberSessionLogs: (id: number, packageId?: number, limit = 100) => {
+    const p = new URLSearchParams({ limit: String(limit) })
+    if (packageId) p.set('packageId', String(packageId))
+    return request<SessionLog[]>(`/admin/members/${id}/session-logs?${p}`)
+  },
   rebindCoach: (id: number, coachId: number, remark?: string) =>
     request<void>(`/admin/members/${id}/coach`, { method: 'PUT', body: JSON.stringify({ coachId, remark }) }),
   addPackage: (id: number, d: any) => request<any>(`/admin/members/${id}/packages`, { method: 'POST', body: JSON.stringify(d) }),
@@ -210,7 +241,9 @@ export const api = {
 
   /* ===== 报表 / 工作台 ===== */
   dashboard: () => request<any>('/admin/dashboard'),
-  reportFinance: () => request<any>('/reports/finance'),
+  // 财务营收：range = day | week | month | total，排行按 range 聚合
+  reportFinance: (range: 'day' | 'week' | 'month' | 'total' = 'month') =>
+    request<any>(`/reports/finance?range=${range}`),
   reportCourses: () => request<any>('/reports/courses'),
   // 课程统计：range = day | week | month | total，按课程名分组并按教练细分
   reportCourseStats: (range: 'day' | 'week' | 'month' | 'total' = 'total') =>

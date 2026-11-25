@@ -51,8 +51,8 @@ function reenter() {
   <div class="page">
     <div class="login-hero">
       <div class="logo-badge">🏋</div>
-      <h1>首次进入 · 绑定教练账号</h1>
-      <p>输入后台开通的教练账号与密码</p>
+      <h1>首次进入 · 绑定管理端账号</h1>
+      <p>输入后台开通的教练或管理员账号与密码</p>
     </div>
     <div class="login-body">
       <div class="banner info">
@@ -60,7 +60,7 @@ function reenter() {
       </div>
 
       <div class="input">📱
-        <input v-model="form.phone" maxlength="11" placeholder="教练手机号" inputmode="numeric" />
+        <input v-model="form.phone" maxlength="11" placeholder="教练 / 管理员手机号" inputmode="numeric" />
       </div>
       <div class="input">🔒
         <input v-model="form.password" type="password" placeholder="登录密码" @keyup.enter="submit" />
@@ -77,7 +77,7 @@ function reenter() {
         <span class="link" @click="router.replace('/login')">改用账号密码登录</span>
       </div>
       <div class="login-foot">
-        连续输错 5 次密码会锁定 15 分钟；离职或换人时，店长可在教练详情页解绑微信。
+        连续输错 5 次密码会锁定 15 分钟；离职或换人时请联系店长解绑微信。
       </div>
     </div>
   </div>

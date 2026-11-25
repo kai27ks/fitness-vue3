@@ -1,12 +1,11 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
-import { api } from '../api'
-import { parseBookingTime } from '../utils'
+import { api, type SessionLog } from '../api'
 import TabBar from '../components/TabBar.vue'
 import NavBar from '../components/NavBar.vue'
 
 const packages = ref<any[]>([])
-const bookings = ref<any[]>([])
+const logs = ref<SessionLog[]>([])
 const current = ref(0)
 const loading = ref(true)
 
@@ -17,35 +16,44 @@ const percent = computed(() => {
   return Math.round((pkg.value.remain / pkg.value.total) * 100)
 })
 
-/** 消课流水：购买 + 每笔预约的课时变动 */
+const TYPE_TEXT: Record<string, string> = {
+  CONSUME: '上课消课',
+  PURCHASE: '购买课时',
+  ADJUST: '课时调整',
+  IMPORT: '导入课时'
+}
+
+/** 消费记录：全部来自后端课时流水（购买 / 消课 / 调整 / 导入），按当前课包过滤 */
 const flow = computed(() => {
-  if (!pkg.value) return []
-  const items: any[] = [{
-    type: 'purchase',
-    title: `购买课包 ${pkg.value.courseName} ${pkg.value.total} 节`,
-    sub: '线下支付',
-    delta: `+${pkg.value.total} 节`,
-    cls: ''
-  }]
-  bookings.value
-    .filter(b => !pkg.value || b.courseName === pkg.value.courseName)
-    .forEach(b => {
-      const t = parseBookingTime(b.startTime, b.endTime)
-      if (b.status === 'BOOKED') {
-        items.push({ type: 'book', title: `预约 ${t.date} ${t.time} ${b.courseName}`, sub: '开课自动签到扣减', delta: '预占', cls: 'n' })
-      } else if (b.status === 'CHECKED_IN' || b.status === 'COMPLETED') {
-        items.push({ type: 'checkin', title: `完成 ${b.courseName} 1 节`, sub: `${t.date} ${t.time} · ${b.coachName}`, delta: '-1 节', cls: 'm' })
-      } else {
-        items.push({ type: 'cancel', title: `取消 ${t.date} ${t.time} ${b.courseName}`, sub: b.cancelBy === 'MEMBER' ? '会员取消' : '教练取消', delta: '无变动', cls: 'n' })
+  const p = pkg.value
+  if (!p) return []
+  return logs.value
+    .filter(l => l.packageId === p.id)
+    .map(l => {
+      const up = l.changeSessions > 0
+      const title = l.type === 'CONSUME'
+        ? `${l.courseName} 上课消课`
+        : `${TYPE_TEXT[l.type] || '课时变动'} · ${l.courseName}`
+      const sub = [
+        l.type === 'CONSUME' && l.bookingTime ? l.bookingTime : l.createTime,
+        l.coachName || '',
+        l.remark || ''
+      ].filter(Boolean).join(' · ')
+      return {
+        type: l.type,
+        title,
+        sub,
+        remain: l.remainAfter == null ? '' : `剩 ${l.remainAfter} 节`,
+        delta: `${up ? '+' : ''}${l.changeSessions} 节`,
+        cls: up ? '' : 'm'
       }
     })
-  return items
 })
 
 onMounted(async () => {
   try {
     packages.value = await api.packages()
-    bookings.value = await api.myBookings()
+    logs.value = await api.sessionLogs(undefined, 200)
     const idx = packages.value.findIndex(p => p.remain > 0)
     if (idx >= 0) current.value = idx
   } catch (e: any) {
@@ -77,17 +85,20 @@ onMounted(async () => {
       </div>
 
       <div class="scroll-area" style="margin-top: 6px">
-        <div class="sec-title" style="margin-top: 14px"><b>消课记录</b><span style="font-size: 11.5px; color: var(--sub)">续课请联系前台</span></div>
+        <div class="sec-title" style="margin-top: 14px"><b>消费记录</b><span style="font-size: 11.5px; color: var(--sub)">续课请联系前台</span></div>
         <div class="flow">
           <div v-for="(f, i) in flow" :key="i" class="fw">
-            <div class="ic" :class="f.type === 'purchase' ? 'i-green' : f.type === 'checkin' ? 'i-green' : f.type === 'book' ? 'i-blue' : 'i-orange'">
-              <svg v-if="f.type === 'checkin'" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
-              <svg v-else-if="f.type === 'purchase'" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
-              <svg v-else-if="f.type === 'book'" viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/></svg>
-              <svg v-else viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+            <div class="ic" :class="f.type === 'PURCHASE' ? 'i-green' : f.type === 'CONSUME' ? 'i-green' : f.type === 'ADJUST' ? 'i-orange' : 'i-blue'">
+              <svg v-if="f.type === 'CONSUME'" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></svg>
+              <svg v-else-if="f.type === 'PURCHASE'" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+              <svg v-else-if="f.type === 'ADJUST'" viewBox="0 0 24 24"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+              <svg v-else viewBox="0 0 24 24"><path d="M12 3v12M7 10l5 5 5-5M4 21h16"/></svg>
             </div>
             <div class="t">{{ f.title }}<small>{{ f.sub }}</small></div>
-            <div class="d"><b :class="f.cls">{{ f.delta }}</b></div>
+            <div class="d"><b :class="f.cls">{{ f.delta }}</b><small v-if="f.remain">{{ f.remain }}</small></div>
+          </div>
+          <div v-if="!flow.length" class="empty" style="padding: 24px 0">
+            <p style="font-size: 12px; color: var(--sub)">暂无消费记录</p>
           </div>
         </div>
       </div>

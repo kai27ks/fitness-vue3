@@ -10,6 +10,7 @@ const router = useRouter()
 const role = getRole()
 const coach = ref<any>(null)
 const d = ref<any>(null)
+const reviews = ref<any>(null)
 
 const menus = [
   { label: role === 'COACH' ? '我的预约' : '预约管理', path: '/admin/schedule', cls: 'i-green', icon: '<rect x="3" y="4" width="18" height="17" rx="3"/><path d="M8 2v4M16 2v4M3 10h18"/>' },
@@ -30,10 +31,9 @@ function logout() {
 }
 
 onMounted(async () => {
-  try {
-    d.value = await api.dashboard()
-    if (role === 'COACH') coach.value = await api.coachMe()
-  } catch (e: any) { if (e.message !== '登录已过期') toast(e.message) }
+  try { d.value = await api.dashboard() } catch (e: any) { if (e.message !== '登录已过期') toast(e.message) }
+  try { coach.value = await api.coachMe() } catch { /* 没有教练档案时保留通用称呼 */ }
+  try { reviews.value = await api.coachMyReviews(10) } catch { reviews.value = null }
 })
 </script>
 
@@ -41,10 +41,15 @@ onMounted(async () => {
   <div class="page">
     <div class="me-hero">
       <div class="row">
-        <div class="avatar">{{ (coach?.name || '陈')[0] }}</div>
-        <div><b>{{ coach?.name || '陈筱鹭' }}</b><small>{{ role === 'ADMIN' ? '管理员 · 拥有全部权限' : '教练' }}</small></div>
+        <div class="avatar">{{ (coach?.name || (role === 'ADMIN' ? '管' : '教'))[0] }}</div>
+        <div><b>{{ coach?.name || (role === 'ADMIN' ? '管理员' : '教练') }}</b><small>{{ role === 'ADMIN' ? '管理员 · 拥有全部权限' : '教练' }}</small></div>
       </div>
       <span class="tag">{{ role === 'ADMIN' ? '管理员' : '教练' }}</span>
+      <div v-if="reviews && reviews.summary" style="margin-top:10px;font-size:12px;color:#fff;opacity:.9">
+        会员满意度 <b style="font-size:16px">{{ reviews.summary.count ? reviews.summary.average : '—' }}</b>
+        <span v-if="reviews.summary.count">/ 5 · 共 {{ reviews.summary.count }} 条评价</span>
+        <span v-else>· 暂无评价</span>
+      </div>
       <div class="me-card">
         <div><b>{{ d?.monthClassCount ?? '-' }}</b><small>本月上课</small></div>
         <div><b>{{ d?.todayClassCount ?? '-' }}</b><small>今日课程</small></div>

@@ -10,6 +10,7 @@ import NavBar from '../../components/NavBar.vue'
 const router = useRouter()
 const role = getRole()
 const d = ref<any>(null)
+const staffName = ref('')
 const entries = [
   { label: '添加会员', path: '/admin/members/add', cls: 'i-green', icon: '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M19 8v6M22 11h-6"/>' },
   { label: '会员管理', path: '/admin/members', cls: 'i-orange', icon: '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>' },
@@ -21,6 +22,10 @@ const entries = [
 
 onMounted(async () => {
   try { d.value = await api.dashboard() } catch (e: any) { if (e.message !== '登录已过期') alert(e.message) }
+  try {
+    const me = await api.coachMe()
+    staffName.value = me?.name || ''
+  } catch { /* 没有教练档案时保留通用称呼 */ }
 })
 </script>
 
@@ -29,7 +34,7 @@ onMounted(async () => {
     <div class="dash-hero">
       <div class="row">
         <div class="studio">体</div>
-        <div><b>{{ d?.studioName || '工作室' }}</b><small>{{ role === 'ADMIN' ? '管理员' : '教练' }} · 陈筱鹭</small></div>
+        <div><b>{{ d?.studioName || '工作室' }}</b><small>{{ role === 'ADMIN' ? '管理员' : '教练' }} · {{ staffName || (role === 'ADMIN' ? '管理员' : '教练') }}</small></div>
       </div>
       <div class="stat-card" v-if="d">
         <div class="stat"><div class="num">{{ d.todayMemberCount }}</div><small>今日会员</small><div class="month">月 {{ d.monthMemberCount }}</div></div>

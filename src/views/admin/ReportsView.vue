@@ -10,6 +10,19 @@ const finance = ref<any>(null)
 const course = ref<any>(null)
 const loading = ref(true)
 
+/* ===== 财务营收：日 / 周 / 月 / 累计 ===== */
+type Range = 'day' | 'week' | 'month' | 'total'
+const financeRange = ref<Range>('month')
+
+async function loadFinance(range: Range) {
+  financeRange.value = range
+  try {
+    finance.value = await api.reportFinance(range)
+  } catch (e: any) {
+    if (e.message !== '登录已过期') toast(e.message)
+  }
+}
+
 /* ===== 课程统计 ===== */
 type StatsRange = 'day' | 'week' | 'month' | 'total'
 const statsRange = ref<StatsRange>('month')
@@ -85,10 +98,20 @@ const courseBars = computed(() => {
   return arr.map((x: any) => ({ ...x, h: Math.round((x.value / m) * 100) }))
 })
 
+const financeRangeName = computed(() => RANGE_NAMES[financeRange.value as StatsRange])
+const financeHero = computed(() => {
+  const f = finance.value
+  if (!f) return 0
+  if (financeRange.value === 'day') return Number(f.todayRevenue) || 0
+  if (financeRange.value === 'week') return Number(f.weekRevenue) || 0
+  if (financeRange.value === 'month') return Number(f.monthRevenue) || 0
+  return Number(f.totalRevenue) || 0
+})
+
 onMounted(async () => {
   loadStats('month')
   try {
-    finance.value = await api.reportFinance()
+    await loadFinance('month')
     course.value = await api.reportCourses()
   } catch (e: any) { if (e.message !== '登录已过期') toast(e.message) } finally { loading.value = false }
 })
@@ -104,9 +127,15 @@ onMounted(async () => {
     <div v-if="loading" class="loading">加载中…</div>
 
     <div v-else-if="tab === 'finance' && finance" class="scroll-area" style="padding-top:0">
+      <div class="range-tabs" style="margin:0 0 12px">
+        <span :class="{ on: financeRange === 'day' }" @click="loadFinance('day')">今日</span>
+        <span :class="{ on: financeRange === 'week' }" @click="loadFinance('week')">本周</span>
+        <span :class="{ on: financeRange === 'month' }" @click="loadFinance('month')">本月</span>
+        <span :class="{ on: financeRange === 'total' }" @click="loadFinance('total')">累计</span>
+      </div>
       <div class="pkg-hero" style="margin:0 0 12px;padding:18px 20px">
         <div style="display:flex;justify-content:space-between;align-items:center">
-          <div><small>本月总营收</small><h2 style="margin:6px 0 0;font-size:30px">¥ {{ Math.round(finance.monthRevenue).toLocaleString() }}</h2></div>
+          <div><small>{{ financeRangeName }}营收</small><h2 style="margin:6px 0 0;font-size:30px">¥ {{ Math.round(financeHero).toLocaleString() }}</h2></div>
           <span class="pill" style="background:rgba(255,255,255,.2);color:#fff">累计 ¥{{ Math.round(finance.totalRevenue).toLocaleString() }}</span>
         </div>
       </div>
@@ -117,13 +146,13 @@ onMounted(async () => {
         </div>
       </div>
       <div class="chart-card">
-        <h4>会员消费排行</h4><div class="cap">本月 · 按课包购买金额</div>
+        <h4>会员消费排行</h4><div class="cap">{{ financeRangeName }} · 按课包购买金额</div>
         <div v-for="(m, i) in finance.topMembers" :key="i" class="rank">
           <span class="no" :class="{ g: i === 0 }">{{ i + 1 }}</span>
           <span class="name">{{ m.name }}</span>
           <span class="val">¥{{ Math.round(m.amount).toLocaleString() }}</span>
         </div>
-        <div v-if="!finance.topMembers.length" style="padding:10px 0;color:var(--sub);font-size:12px">本月暂无数据</div>
+        <div v-if="!finance.topMembers.length" style="padding:10px 0;color:var(--sub);font-size:12px">{{ financeRangeName }}暂无数据</div>
       </div>
     </div>
 

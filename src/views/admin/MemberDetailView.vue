@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from 'vue'
 import { useRoute } from 'vue-router'
-import { api } from '../../api'
+import { api, type SessionLog } from '../../api'
 import { BOOKING_STATUS, parseBookingTime, toast } from '../../utils'
 import NavBar from '../../components/NavBar.vue'
 
@@ -19,6 +19,14 @@ const saving = ref(false)
 const editForm = reactive({ name: '', phone: '', gender: 1, birthday: '' })
 const claimCode = ref<any>(null)
 const bindInfo = ref<any>(null)
+const sessionLogs = ref<SessionLog[]>([])
+
+const LOG_TYPE: Record<string, string> = {
+  CONSUME: '上课消课',
+  PURCHASE: '购买课时',
+  ADJUST: '课时调整',
+  IMPORT: '导入课时'
+}
 
 const member = computed(() => data.value?.member || {})
 const packages = computed(() => data.value?.packages || [])
@@ -36,6 +44,8 @@ async function load() {
   catch (e: any) { if (e.message !== '登录已过期') toast(e.message) }
   finally { loading.value = false }
   loadExtra()
+  try { sessionLogs.value = await api.adminMemberSessionLogs(id, undefined, 100) }
+  catch { sessionLogs.value = [] }
 }
 
 async function rebind(e: any) {
@@ -178,6 +188,20 @@ onMounted(async () => {
           <span class="pill" :class="(BOOKING_STATUS[b.status] || { cls: 'wait' }).cls">{{ (BOOKING_STATUS[b.status] || { text: b.status }).text }}</span>
         </div>
         <div v-if="!bookings.length" class="banner info">暂无预约记录。</div>
+
+        <div class="sec-title"><b>课时流水</b><span style="font-size:11.5px;color:var(--sub)">消课 / 购课 / 调整，每笔可追溯</span></div>
+        <div v-for="l in sessionLogs" :key="l.id" class="lesson">
+          <div class="avatar" :style="l.changeSessions > 0
+            ? 'background:linear-gradient(135deg,#12C48B,#0B8F7E);color:#fff'
+            : 'background:#EEF1F4;color:#687582'">{{ l.changeSessions > 0 ? '+' : '−' }}</div>
+          <div class="info">
+            <b>{{ LOG_TYPE[l.type] || l.type }} · {{ l.courseName }}
+              <span class="pill" :class="l.changeSessions > 0 ? 'done' : 'info'">{{ l.changeSessions > 0 ? '+' : '' }}{{ l.changeSessions }} 节</span>
+            </b>
+            <small>{{ l.createTime }}<template v-if="l.coachName"> · {{ l.coachName }}</template><template v-if="l.remainAfter !== null"> · 剩余 {{ l.remainAfter }} 节</template></small>
+          </div>
+        </div>
+        <div v-if="!sessionLogs.length" class="banner info">暂无课时流水；上线前已消课的记录可用 SQL 脚本回填。</div>
       </div>
     </template>
 
