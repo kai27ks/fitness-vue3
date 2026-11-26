@@ -45,7 +45,7 @@ jobs:
       - name: 上传并部署
         env:
           HOST: '123.206.230.38'
-          USER: 'app'
+          USER: 'ubuntu'
           PORT: '22'
         run: |
           set -euo pipefail
@@ -56,11 +56,12 @@ jobs:
           scp -P "$PORT" "${SSH_OPT[@]}" dist.tar.gz "$TARGET:~/incoming/dist.tar.gz"
 
           # 解压到 incoming/dist 后交给 deploy.sh 做原子替换（不重启后端）
+          # /var/www 属主是 root，必须 sudo；-n 免密，需密码时直接失败而不是卡住
           ssh -p "$PORT" "${SSH_OPT[@]}" "$TARGET" '
             set -e
             rm -rf ~/incoming/dist && mkdir -p ~/incoming/dist
             tar -xzf ~/incoming/dist.tar.gz -C ~/incoming/dist
-            /opt/fitness/deploy.sh --frontend-only
+            sudo -n /opt/fitness/deploy.sh --frontend-only
           '
 
       - name: 保留产物便于排查
