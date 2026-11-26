@@ -94,6 +94,25 @@ export interface SessionLog {
   createTime: string
 }
 
+/** 管理端点评记录（GET /api/admin/reviews） */
+export interface AdminReviewItem {
+  id: number
+  memberName: string
+  memberPhone: string | null
+  coachName: string
+  courseName: string
+  rating: number
+  bookingTime: string | null
+  createTime: string
+}
+export interface AdminReviewPage {
+  total: number
+  page: number
+  size: number
+  summary: { count: number; average: number }
+  items: AdminReviewItem[]
+}
+
 export interface CoachWechatBind {
   bound: boolean
   openidTail: string | null
@@ -248,6 +267,14 @@ export const api = {
   // 课程统计：range = day | week | month | total，按课程名分组并按教练细分
   reportCourseStats: (range: 'day' | 'week' | 'month' | 'total' = 'total') =>
     request<any>(`/reports/course-stats?range=${range}`),
+  // 管理端点评记录：coachId 为空看全店，summary 跟随筛选口径
+  adminReviews: (q: { coachId?: number; page?: number; size?: number } = {}) => {
+    const p = new URLSearchParams()
+    if (q.coachId) p.set('coachId', String(q.coachId))
+    if (q.page) p.set('page', String(q.page))
+    if (q.size) p.set('size', String(q.size))
+    return request<AdminReviewPage>(`/admin/reviews${p.toString() ? '?' + p : ''}`)
+  },
 
   /* ===== 会员风采 ===== */
   momentConfig: () => request<any>('/moments/config'),

@@ -119,7 +119,7 @@ onMounted(async () => {
 
 <template>
   <div class="page">
-    <NavBar title="数据报表" />
+    <NavBar title="数据报表" right="点评记录" @right="$router.push('/admin/reviews')" />
     <div class="report-tabs">
       <div class="rt" :class="{ on: tab === 'finance' }" @click="tab = 'finance'">财务</div>
       <div class="rt" :class="{ on: tab === 'course' }" @click="tab = 'course'">课程</div>

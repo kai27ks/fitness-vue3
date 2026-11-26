@@ -36,6 +36,8 @@ const routes = [
   { path: '/admin/leave', component: () => import('../views/admin/LeaveView.vue') },
   { path: '/admin/mine', component: () => import('../views/admin/MineView.vue') },
   { path: '/admin/reports', component: () => import('../views/admin/ReportsView.vue') },
+  // 点评记录：管理员专属（教练端接口会拒绝，这里路由层也拦一道）
+  { path: '/admin/reviews', component: () => import('../views/admin/ReviewsView.vue') },
   { path: '/admin/moments/review', component: () => import('../views/admin/MomentReviewView.vue') },
   { path: '/admin/claim-requests', component: () => import('../views/admin/ClaimRequestsView.vue') },
   { path: '/admin/notify-logs', component: () => import('../views/admin/NotifyLogsView.vue') },
@@ -52,6 +54,8 @@ router.beforeEach((to) => {
   if (to.path === '/' && getToken() && getRole() !== 'MEMBER') return '/admin/workbench'
   // 管理端路由仅对 ADMIN/COACH 开放
   if (to.path.startsWith('/admin/') && getRole() === 'MEMBER') return '/'
+  // 点评记录只给管理员（与后端 requireAdmin 一致）
+  if (to.path === '/admin/reviews' && getRole() !== 'ADMIN') return '/admin/workbench'
   return true
 })
 
